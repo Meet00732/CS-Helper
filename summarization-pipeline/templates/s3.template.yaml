@@ -1,0 +1,20 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "S3 Buckets Template for Summarization Pipeline"
+
+Parameters:
+  BucketName:
+    Type: String
+    Description: "The name of the S3 bucket"
+
+
+Resources:
+
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+
+Outputs:
+  BucketName:
+    Description: "Name of the created s3 bucket"
+    Value: !Ref BucketName
