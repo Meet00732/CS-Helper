@@ -18,7 +18,7 @@ LAMBDA_S3_KEY="textract_lambda.zip"
 
 # Package the Lambda function code
 echo "Packaging Lambda function code..."
-cd lambdas || exit
+cd lambda || exit
 zip -r "../scripts/$LAMBDA_ZIP" ./*
 cd ..
 
