@@ -11,15 +11,21 @@ RAW_PREFIX="RawFiles/"
 PROCESSED_PREFIX="ProcessedFiles/"
 
 # Packages
-LAMBDA_ZIP="scripts/textract_lambda.zip"
+LAMBDA_ZIP="textract_lambda.zip"
 LAMBDA_S3_KEY="textract_lambda.zip"
 
 
-# Check if the S3 bucket already exists
-bucket_exists=$(aws s3api head-bucket --bucket "$BUCKET_NAME" 2>&1 || echo "false")
 
+# Package the Lambda function code
+echo "Packaging Lambda function code..."
+cd lambdas || exit
+zip -r "../scripts/$LAMBDA_ZIP" ./*
+cd ..
+
+# Upload the zip file to S3
 echo "Uploading Lambda deployment package to S3..."
-aws s3 cp $LAMBDA_ZIP s3://$BUCKET_NAME/$LAMBDA_S3_KEY
+aws s3 cp "scripts/$LAMBDA_ZIP" s3://$BUCKET_NAME/$LAMBDA_S3_KEY
+
 
 # Deploy SSM Parameter Store
 echo "Deploying SSM Parameter Store..."
