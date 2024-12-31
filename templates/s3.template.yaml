@@ -4,8 +4,12 @@ Description: "S3 Buckets Template for Summarization Pipeline"
 Parameters:
   BucketName:
     Type: String
+    Default: "cs-helper"
     Description: "The name of the S3 bucket"
 
+
+Conditions:
+  BucketDoesNotExist: !Equals [!Ref BucketName, ""]
 
 Resources:
 
