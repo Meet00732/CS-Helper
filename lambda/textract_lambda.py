@@ -1,12 +1,11 @@
 import boto3
 import json
 import os
-import configuration
+from configuration import configuration
 
 def handler(event, context):
     s3 = boto3.client('s3')
     textract = boto3.client('textract')
-
     # Get bucket name and file key from the event
     # bucket_name = event['Records'][0]['s3']['bucket']['name']
     key = event['Records'][0]['s3']['object']['key']
@@ -46,3 +45,6 @@ def handler(event, context):
     )
 
     return {"StatusCode": 200, "body": "Text Extraction Complete!"}
+
+configuration1 = configuration.Configuration()
+configuration1.get_parameter
