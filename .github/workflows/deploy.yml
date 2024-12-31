@@ -3,7 +3,7 @@ name: Deploy Summarization Pipeline
 on:
   push:
     branches:
-      - main
+      - master
   workflow_dispatch: # Allow manual triggering of the workflow
 
 jobs:

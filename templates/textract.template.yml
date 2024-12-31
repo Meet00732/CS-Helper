@@ -1,0 +1,76 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Textract Processing Pipeline"
+
+Parameters:
+  BucketName:
+    Type: String
+    Description: "The name of the S3 bucket"
+
+Resources:
+
+  # IAM Role for Lambda with Textract permissions
+  TextractLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: TextractAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "textract:*"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "s3:GetObject"
+                  - "s3:PutObject"
+                Resource: !Sub "arn:aws:s3:::${BucketName}/*"
+              - Effect: Allow
+                Action:
+                  - "ssm:GetParameter"
+                Resource: !Sub "arn:aws:ssm:*:*:parameter/*"
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: "arn:aws:logs:*:*:*"
+
+
+  # Lambda Function
+  TextractLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: "TextractProcessingLambda"
+      Runtime: python3.8
+      Handler: textract_lambda.handler
+      Role: !GetAtt TextractLambdaRole.Arn
+      Code:
+        S3Bucket: !Ref BucketName
+        S3Key: "textract_lambda.zip"
+      Timeout: 120
+      MemorySize: 512
+
+
+  # S3 Bucket Event Notification
+  S3BucketNotificationConfiguration:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: "s3:ObjectCreated:*"
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: "RawFiles/"
+            Function: !GetAtt TextractLambda.Arn        
