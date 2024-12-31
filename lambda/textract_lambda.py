@@ -13,7 +13,9 @@ def handler(event, context):
     raw_prefix = configuration.get_parameter('Raw-Files-Prefix')
     processed_prefix = configuration.get_parameter('Processed-Files-Prefix')
 
-    print(f"Processing file: {raw_prefix} from bucket: {bucket_name}")
+    print(f"Raw Prefix: {raw_prefix}")
+    print(f"Processed Prefix: {processed_prefix}")
+    print(f"Processing file: {key} from bucket: {bucket_name}")
 
     # Invoking textract to analyze the file
     response = textract.analyze_document(
@@ -34,7 +36,7 @@ def handler(event, context):
 
     
     # Save extracted text to the ProcessedFiles folder
-    processed_key = key.replace(raw_prefix, processed_prefix).replace('pdf', '.txt').replace('.jpg', '.txt').replace('.png', '.txt')
+    processed_key = key.replace(raw_prefix, processed_prefix).replace('.pdf', '.txt').replace('.jpg', '.txt').replace('.png', '.txt')
     print(f"Processed Key: {processed_key}")
 
     # Save the extracted text to the processed prefix
@@ -45,6 +47,3 @@ def handler(event, context):
     )
 
     return {"StatusCode": 200, "body": "Text Extraction Complete!"}
-
-configuration1 = configuration.Configuration()
-configuration1.get_parameter

@@ -8,12 +8,12 @@ Parameters:
 
   RawFilesPrefix:
     Type: String
-    Default: "RawFiles/"
+    Default: "summarization-raw-files/"
     Description: "Prefix of the folder where raw files are stored"
 
   ProcessedFilesPrefix:
     Type: String
-    Default: "ProcessedFiles/"
+    Default: "summarization-processed-files/"
     Description: "Prefix of the folder where processed files are stored"
 
 
