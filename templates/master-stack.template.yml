@@ -7,14 +7,14 @@ Resources:
     Properties:
       TemplateURL: !Sub "https://s3.amazonaws.com/${BucketName}/s3.template.yaml"
       Parameters:
-        BucketName: !Ref S3BucketName
+        BucketName: !Ref BucketName
 
   SSMParameterStack:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: !Sub "https://s3.amazonaws.com/${BucketName}/ssm.template.yaml"
       Parameters:
-        BucketName: !Ref S3BucketName
+        BucketName: !Ref BucketName
         RawFilesPrefix: !Ref RawFilesPrefix
         ProcessedFilesPrefix: !Ref ProcessedFilesPrefix
 
@@ -23,7 +23,7 @@ Resources:
     Properties:
       TemplateURL: !Sub "https://s3.amazonaws.com/${BucketName}/textract.template.yml"
       Parameters:
-        BucketName: !Ref S3BucketName
+        BucketName: !Ref BucketName
 
 Parameters:
   BucketName:
