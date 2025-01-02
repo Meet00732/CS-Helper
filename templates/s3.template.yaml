@@ -47,13 +47,13 @@ Resources:
             folder = event['ResourceProperties']['Folder']
 
             try:
-                # Check if the folder exists
+                # Check if the folder exists by listing objects with the folder prefix
                 response = s3.list_objects_v2(Bucket=bucket, Prefix=folder, MaxKeys=1)
                 
                 if 'Contents' not in response or len(response['Contents']) == 0:
-                    # Create the folder if it doesn't exist
-                    s3.put_object(Bucket=bucket, Key=(folder if folder.endswith('/') else folder + '/'))
-                
+                    # Create a placeholder object to make the folder visible in the AWS GUI
+                    s3.put_object(Bucket=bucket, Key=(folder if folder.endswith('/') else folder + '/') + '.placeholder', Body='')
+
                 cfnresponse.send(event, context, cfnresponse.SUCCESS, {"Message": "Folder created or already exists"})
             except Exception as e:
                 # Handle any errors and fail the stack operation
