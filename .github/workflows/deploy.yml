@@ -23,10 +23,10 @@ jobs:
 
     - name: Upload YAML templates to S3
       run: |
-        aws s3 cp s3.template.yaml s3://cs-helper/template/
-        aws s3 cp ssm.template.yaml s3://cs-helper/template/
-        aws s3 cp textract.template.yml s3://cs-helper/template/
-        aws s3 cp master-stack.yml s3://cs-helper/template/
+        aws s3 cp templates/s3.template.yaml s3://cs-helper/template/
+        aws s3 cp templates/ssm.template.yaml s3://cs-helper/template/
+        aws s3 cp templates/textract.template.yml s3://cs-helper/template/
+        aws s3 cp templates/master-stack.yml s3://cs-helper/template/
 
     - name: Deploy Master Stack
       run: |
