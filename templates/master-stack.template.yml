@@ -1,7 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: "Master Stack for Summarization Pipeline"
 
-
 Parameters:
   BucketName:
     Type: String
@@ -18,7 +17,6 @@ Parameters:
     Default: "summarization-processed-files/"
     Description: "Prefix for processed files in S3 bucket"
 
-  
 Resources:
   S3BucketStack:
     Type: AWS::CloudFormation::Stack
@@ -29,6 +27,7 @@ Resources:
 
   SSMParameterStack:
     Type: AWS::CloudFormation::Stack
+    DependsOn: S3BucketStack  # Ensure S3 stack is created first
     Properties:
       TemplateURL: !Sub "https://s3.amazonaws.com/${BucketName}/ssm.template.yaml"
       Parameters:
@@ -38,6 +37,7 @@ Resources:
 
   TextractPipelineStack:
     Type: AWS::CloudFormation::Stack
+    DependsOn: SSMParameterStack  # Ensure SSM stack is created before Textract
     Properties:
       TemplateURL: !Sub "https://s3.amazonaws.com/${BucketName}/textract.template.yml"
       Parameters:
