@@ -5,25 +5,11 @@ Parameters:
   BucketName:
     Type: String
     Default: "cs-helper"
-    Description: "The name of the S3 bucket"
-
-Conditions:
-  CreateBucket:
-    Fn::Not:
-      - Fn::Equals: [!Ref BucketName, ""]
+    Description: "The name of the pre-existing S3 bucket"
 
 Resources:
-  S3Bucket:
-    Type: AWS::S3::Bucket
-    Condition: CreateBucket
-    Properties:
-      BucketName: !Ref BucketName
-      VersioningConfiguration:
-        Status: Enabled
-
   S3RawFilesFolder:
     Type: Custom::S3Folder
-    DependsOn: S3Bucket
     Properties:
       ServiceToken: !GetAtt S3FolderLambda.Arn
       BucketName: !Ref BucketName
@@ -31,7 +17,6 @@ Resources:
 
   S3ProcessedFilesFolder:
     Type: Custom::S3Folder
-    DependsOn: S3Bucket
     Properties:
       ServiceToken: !GetAtt S3FolderLambda.Arn
       BucketName: !Ref BucketName
@@ -39,7 +24,6 @@ Resources:
 
   S3TemplateFolder:
     Type: Custom::S3Folder
-    DependsOn: S3Bucket
     Properties:
       ServiceToken: !GetAtt S3FolderLambda.Arn
       BucketName: !Ref BucketName
@@ -101,5 +85,5 @@ Resources:
 
 Outputs:
   BucketName:
-    Description: "Name of the created or existing S3 bucket"
+    Description: "Name of the pre-existing S3 bucket"
     Value: !Ref BucketName
