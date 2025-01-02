@@ -7,18 +7,17 @@ Parameters:
     Default: "cs-helper"
     Description: "The name of the S3 bucket"
 
-
 Conditions:
-  BucketDoesNotExist: !Equals [!Ref BucketName, ""]
+  BucketDoesNotExist: !Not [!Equals [!Ref BucketName, ""]]
 
 Resources:
-
   S3Bucket:
     Type: AWS::S3::Bucket
+    Condition: BucketDoesNotExist
     Properties:
       BucketName: !Ref BucketName
 
 Outputs:
   BucketName:
-    Description: "Name of the created s3 bucket"
+    Description: "Name of the created or existing S3 bucket"
     Value: !Ref BucketName

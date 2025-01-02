@@ -1,6 +1,24 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: "Master Stack for Summarization Pipeline"
 
+
+Parameters:
+  BucketName:
+    Type: String
+    Default: "cs-helper"
+    Description: "The name of the S3 bucket"
+  
+  RawFilesPrefix:
+    Type: String
+    Default: "summarization-raw-files/"
+    Description: "Prefix for raw files in S3 bucket"
+
+  ProcessedFilesPrefix:
+    Type: String
+    Default: "summarization-processed-files/"
+    Description: "Prefix for processed files in S3 bucket"
+
+  
 Resources:
   S3BucketStack:
     Type: AWS::CloudFormation::Stack
@@ -24,19 +42,3 @@ Resources:
       TemplateURL: !Sub "https://s3.amazonaws.com/${BucketName}/textract.template.yml"
       Parameters:
         BucketName: !Ref BucketName
-
-Parameters:
-  BucketName:
-    Type: String
-    Default: "cs-helper"
-    Description: "The name of the S3 bucket"
-  
-  RawFilesPrefix:
-    Type: String
-    Default: "summarization-raw-files/"
-    Description: "Prefix for raw files in S3 bucket"
-
-  ProcessedFilesPrefix:
-    Type: String
-    Default: "summarization-processed-files/"
-    Description: "Prefix for processed files in S3 bucket"
