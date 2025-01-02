@@ -42,22 +42,22 @@ Resources:
           import cfnresponse
 
           def handler(event, context):
-            s3 = boto3.client('s3')
-            bucket = event['ResourceProperties']['BucketName']
-            folder = event['ResourceProperties']['Folder']
+              s3 = boto3.client('s3')
+              bucket = event['ResourceProperties']['BucketName']
+              folder = event['ResourceProperties']['Folder']
 
-            try:
-                # Check if the folder exists by listing objects with the folder prefix
-                response = s3.list_objects_v2(Bucket=bucket, Prefix=folder, MaxKeys=1)
-                
-                if 'Contents' not in response or len(response['Contents']) == 0:
-                    # Create a placeholder object to make the folder visible in the AWS GUI
-                    s3.put_object(Bucket=bucket, Key=(folder if folder.endswith('/') else folder + '/') + '.placeholder', Body='')
+              try:
+                  # Check if the folder exists
+                  response = s3.list_objects_v2(Bucket=bucket, Prefix=folder, MaxKeys=1)
+                  
+                  if 'Contents' not in response or len(response['Contents']) == 0:
+                      # Add an empty folder marker file
+                      s3.put_object(Bucket=bucket, Key=(folder if folder.endswith('/') else folder + '/') + 'empty_folder_marker.txt', Body='')
 
-                cfnresponse.send(event, context, cfnresponse.SUCCESS, {"Message": "Folder created or already exists"})
-            except Exception as e:
-                # Handle any errors and fail the stack operation
-                cfnresponse.send(event, context, cfnresponse.FAILED, {"Message": str(e)})
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {"Message": "Folder created or already exists"})
+              except Exception as e:
+                  # Handle any errors and fail the stack operation
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {"Message": str(e)})
 
   LambdaExecutionRole:
     Type: AWS::IAM::Role
