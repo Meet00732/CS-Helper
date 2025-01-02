@@ -21,7 +21,7 @@ Resources:
   S3BucketStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub "https://s3.amazonaws.com/${BucketName}/s3.template.yaml"
+      TemplateURL: !Sub "https://s3.amazonaws.com/${BucketName}/template/s3.template.yaml"
       Parameters:
         BucketName: !Ref BucketName
 
@@ -29,7 +29,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: S3BucketStack  # Ensure S3 stack is created first
     Properties:
-      TemplateURL: !Sub "https://s3.amazonaws.com/${BucketName}/ssm.template.yaml"
+      TemplateURL: !Sub "https://s3.amazonaws.com/${BucketName}/template/ssm.template.yaml"
       Parameters:
         BucketName: !Ref BucketName
         RawFilesPrefix: !Ref RawFilesPrefix
@@ -39,6 +39,6 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: SSMParameterStack  # Ensure SSM stack is created before Textract
     Properties:
-      TemplateURL: !Sub "https://s3.amazonaws.com/${BucketName}/textract.template.yml"
+      TemplateURL: !Sub "https://s3.amazonaws.com/${BucketName}/template/textract.template.yml"
       Parameters:
         BucketName: !Ref BucketName
