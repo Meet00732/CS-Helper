@@ -3,28 +3,37 @@ name: Deploy Summarization Pipeline
 on:
   push:
     branches:
-      - master
-  workflow_dispatch: # Allow manual triggering of the workflow
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      # Step 2: Configure AWS credentials
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+    - name: Configure AWS CLI
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
 
-      # Step 3: Deploy SSM parameters
-      - name: Deploy SSM Parameters
-        run: |
-          chmod +x scripts/deploy_pipeline.sh
-          ./scripts/deploy_pipeline.sh
+    - name: Upload YAML templates to S3
+      run: |
+        aws s3 cp s3.template.yaml s3://cs-helper/template/
+        aws s3 cp ssm.template.yaml s3://cs-helper/template/
+        aws s3 cp textract.template.yml s3://cs-helper/template/
+        aws s3 cp master-stack.yml s3://cs-helper/template/
+
+    - name: Deploy Master Stack
+      run: |
+        aws cloudformation deploy \
+          --template-file master-stack.yml \
+          --stack-name SummarizationMasterStack \
+          --parameter-overrides \
+            BucketName="cs-helper" \
+            RawFilesPrefix="summarization-raw-files/" \
+            ProcessedFilesPrefix="summarization-processed-files/" \
+          --capabilities CAPABILITY_NAMED_IAM
