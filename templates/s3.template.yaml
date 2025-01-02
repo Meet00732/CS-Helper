@@ -7,9 +7,15 @@ Parameters:
     Default: "cs-helper"
     Description: "The name of the S3 bucket"
 
+Conditions:
+  CreateBucket:
+    Fn::Not:
+      - Fn::Equals: [!Ref BucketName, ""]
+
 Resources:
   S3Bucket:
     Type: AWS::S3::Bucket
+    Condition: CreateBucket
     Properties:
       BucketName: !Ref BucketName
       VersioningConfiguration:
@@ -17,6 +23,7 @@ Resources:
 
   S3RawFilesFolder:
     Type: Custom::S3Folder
+    DependsOn: S3Bucket
     Properties:
       ServiceToken: !GetAtt S3FolderLambda.Arn
       BucketName: !Ref BucketName
@@ -24,6 +31,7 @@ Resources:
 
   S3ProcessedFilesFolder:
     Type: Custom::S3Folder
+    DependsOn: S3Bucket
     Properties:
       ServiceToken: !GetAtt S3FolderLambda.Arn
       BucketName: !Ref BucketName
@@ -31,6 +39,7 @@ Resources:
 
   S3TemplateFolder:
     Type: Custom::S3Folder
+    DependsOn: S3Bucket
     Properties:
       ServiceToken: !GetAtt S3FolderLambda.Arn
       BucketName: !Ref BucketName
@@ -42,6 +51,7 @@ Resources:
       Handler: index.handler
       Role: !GetAtt LambdaExecutionRole.Arn
       Runtime: python3.8
+      Timeout: 30
       Code:
         ZipFile: |
           import boto3
@@ -53,7 +63,10 @@ Resources:
               folder = event['ResourceProperties']['Folder']
 
               try:
-                  s3.put_object(Bucket=bucket, Key=(folder if folder.endswith('/') else folder + '/'))
+                  # Check if folder exists by listing objects with the folder prefix
+                  response = s3.list_objects_v2(Bucket=bucket, Prefix=folder)
+                  if 'Contents' not in response:
+                      s3.put_object(Bucket=bucket, Key=(folder if folder.endswith('/') else folder + '/'))
                   cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
               except Exception as e:
                   cfnresponse.send(event, context, cfnresponse.FAILED, {'Message': str(e)})
