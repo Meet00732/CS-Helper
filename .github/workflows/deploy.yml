@@ -31,7 +31,7 @@ jobs:
     - name: Deploy Master Stack
       run: |
         aws cloudformation deploy \
-          --template-file master-stack.yml \
+          --template-file master-stack.template.yml \
           --stack-name SummarizationMasterStack \
           --parameter-overrides \
             BucketName="cs-helper" \
