@@ -18,7 +18,7 @@ Parameters:
 
 
 Resources:
-  BucketName:
+  BucketNameParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Name: "S3-Bucket-Name"
