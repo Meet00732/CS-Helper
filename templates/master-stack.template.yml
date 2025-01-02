@@ -27,7 +27,7 @@ Resources:
 
   SSMParameterStack:
     Type: AWS::CloudFormation::Stack
-    # DependsOn: S3BucketStack  # Ensure S3 stack is created first
+    DependsOn: S3BucketStack  # Ensure S3 stack is created first
     Properties:
       TemplateURL: !Sub "https://s3.amazonaws.com/${BucketName}/template/ssm.template.yaml"
       Parameters:
