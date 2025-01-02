@@ -26,7 +26,7 @@ jobs:
         aws s3 cp templates/s3.template.yaml s3://cs-helper/template/
         aws s3 cp templates/ssm.template.yaml s3://cs-helper/template/
         aws s3 cp templates/textract.template.yml s3://cs-helper/template/
-        aws s3 cp templates/master-stack.yml s3://cs-helper/template/
+        aws s3 cp templates/master-stack.template.yml s3://cs-helper/template/
 
     - name: Deploy Master Stack
       run: |
