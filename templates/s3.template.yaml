@@ -3,7 +3,7 @@ Description: "S3 Buckets Template for Summarization Pipeline"
 
 Parameters:
   BucketName:
-    Type: AWS::SSM::Parameter::Value<String>
+    Type: String
     Description: "The name of the pre-existing S3 bucket"
 
 Resources:
