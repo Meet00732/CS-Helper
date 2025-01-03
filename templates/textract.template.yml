@@ -72,7 +72,7 @@ Resources:
       FunctionName: !GetAtt TextractLambda.Arn
       Action: lambda:InvokeFunction
       Principal: s3.amazonaws.com
-      SourceArn: !Sub "arn:aws:s3:::${BucketName}"
+      SourceArn: !Sub "arn:aws:s3:::${BucketName}/${RawFilesPrefix}"
 
 Outputs:
   BucketName:
