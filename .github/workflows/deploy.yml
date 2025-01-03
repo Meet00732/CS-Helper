@@ -41,6 +41,11 @@ jobs:
         aws s3 cp templates/textract.template.yml s3://cs-helper/template/
         aws s3 cp templates/master-stack.template.yml s3://cs-helper/template/
 
+    - name: Validate Parameters in CloudFormation
+      run: |
+        aws cloudformation validate-template \
+          --template-body file://templates/master-stack.template.yml
+
     - name: Deploy Master Stack
       run: |
         aws cloudformation deploy \
