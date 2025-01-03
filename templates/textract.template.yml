@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "Textract Processing Pipeline"
+Description: "Lambda function with S3 trigger setup for an existing bucket."
 
 Parameters:
   BucketName:
@@ -8,11 +8,10 @@ Parameters:
 
   RawFilesPrefix:
     Type: String
-    Description: "Prefix for raw files in S3 bucket"
+    Description: "Prefix for raw files in the S3 bucket"
 
 Resources:
-
-  # IAM Role for Lambda with Textract permissions
+  # IAM Role for Lambda
   TextractLambdaRole:
     Type: AWS::IAM::Role
     Properties:
@@ -25,23 +24,15 @@ Resources:
                 - lambda.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: TextractAccess
+        - PolicyName: LambdaS3Access
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
-                  - "textract:*"
-                Resource: "*"
-              - Effect: Allow
-                Action:
                   - "s3:GetObject"
                   - "s3:PutObject"
                 Resource: !Sub "arn:aws:s3:::${BucketName}/*"
-              - Effect: Allow
-                Action:
-                  - "ssm:GetParameter"
-                Resource: !Sub "arn:aws:ssm:*:*:parameter/*"
               - Effect: Allow
                 Action:
                   - "logs:CreateLogGroup"
@@ -72,9 +63,25 @@ Resources:
       FunctionName: !GetAtt TextractLambda.Arn
       Action: lambda:InvokeFunction
       Principal: s3.amazonaws.com
-      SourceArn: !Sub "arn:aws:s3:::${BucketName}/${RawFilesPrefix}"
+      SourceArn: !Sub "arn:aws:s3:::${BucketName}"
+
+  # Bucket Notification for Existing S3 Bucket
+  TextractBucketNotification:
+    Type: AWS::S3::BucketNotification
+    DependsOn: TextractLambdaPermission
+    Properties:
+      Bucket: !Ref BucketName
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: "s3:ObjectCreated:*"
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: "prefix"
+                    Value: !Ref RawFilesPrefix
+            Function: !GetAtt TextractLambda.Arn
 
 Outputs:
-  BucketName:
-    Description: "Name of the S3 bucket"
-    Value: !Ref BucketName
+  LambdaFunctionName:
+    Description: "Name of the Lambda function"
+    Value: !Ref TextractLambda
