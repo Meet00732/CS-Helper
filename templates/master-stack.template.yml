@@ -5,10 +5,12 @@ Parameters:
   BucketName:
     Type: AWS::SSM::Parameter::Value<String>
     Description: "The name of the s3 bucket"
+    Default: BucketName
 
   RawFilesPrefix:
     Type: AWS::SSM::Parameter::Value<String>
     Description: "Prefix of the folder where raw files are stored"
+    Default: RawFilesPrefix
 
 Resources:
   S3BucketStack:
