@@ -52,6 +52,7 @@ Resources:
   # Lambda Function
   TextractLambda:
     Type: AWS::Lambda::Function
+    DependsOn: TextractLambdaRole
     Properties:
       FunctionName: "TextractProcessingLambda"
       Runtime: python3.8
@@ -63,8 +64,10 @@ Resources:
       Timeout: 120
       MemorySize: 512
 
+  # Lambda Permission for S3 Invocation
   TextractLambdaPermission:
     Type: AWS::Lambda::Permission
+    DependsOn: TextractLambda
     Properties:
       FunctionName: !GetAtt TextractLambda.Arn
       Action: lambda:InvokeFunction
