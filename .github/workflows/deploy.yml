@@ -28,7 +28,7 @@ jobs:
           --stack-name SSMParameterStack \
           --capabilities CAPABILITY_NAMED_IAM
 
-    name: Package Lambda Function
+    - name: Package Lambda Function
       run: |
         cd lambda
         zip -r textract_lambda.zip ./*
