@@ -48,8 +48,4 @@ jobs:
         aws cloudformation deploy \
           --template-file templates/master-stack.template.yml \
           --stack-name SummarizationMasterStack \
-          --parameter-overrides \
-            BucketName="cs-helper" \
-            RawFilesPrefix="summarization-raw-files/" \
-            ProcessedFilesPrefix="summarization-processed-files/" \
           --capabilities CAPABILITY_NAMED_IAM
