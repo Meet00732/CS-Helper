@@ -36,6 +36,13 @@ jobs:
         aws s3 cp templates/textract.template.yml s3://cs-helper/template/
         aws s3 cp templates/master-stack.template.yml s3://cs-helper/template/
 
+    - name: Deploy SSM Stack
+      run: |
+        aws cloudformation deploy \
+          --template-file templates/ssm.template.yaml \
+          --stack-name SSMParameterStack \
+          --capabilities CAPABILITY_NAMED_IAM
+
     - name: Deploy Master Stack
       run: |
         aws cloudformation deploy \
