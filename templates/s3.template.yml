@@ -86,8 +86,3 @@ Resources:
                   - "logs:CreateLogStream"
                   - "logs:PutLogEvents"
                 Resource: "arn:aws:logs:*:*:*"
-
-Outputs:
-  BucketName:
-    Description: "Name of the pre-existing S3 bucket"
-    Value: !Ref BucketName
