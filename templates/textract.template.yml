@@ -48,6 +48,12 @@ Resources:
                   - "logs:CreateLogStream"
                   - "logs:PutLogEvents"
                 Resource: "arn:aws:logs:*:*:*"
+              - Effect: Allow
+                Action:
+                  - "events:PutTargets"
+                  - "events:PutRule"
+                  - "events:DeleteRule"
+                Resource: "*"
 
   # Lambda Function
   TextractLambda:
@@ -72,17 +78,25 @@ Resources:
       Principal: s3.amazonaws.com
       SourceArn: !Sub "arn:aws:s3:::${BucketName}"
 
-  # S3 Bucket Notification Configuration
-  S3BucketNotificationConfiguration:
-    Type: AWS::S3::Bucket
+  # EventBridge Rule for S3 Uploads
+  S3EventBridgeRule:
+    Type: AWS::Events::Rule
     Properties:
-      BucketName: !Ref BucketName
-      NotificationConfiguration:
-        LambdaConfigurations:
-          - Event: "s3:ObjectCreated:*"
-            Filter:
-              S3Key:
-                Rules:
-                  - Name: "prefix"
-                    Value: !Ref RawFilesPrefix
-            Function: !GetAtt TextractLambda.Arn
+      Name: "S3UploadEventRule"
+      Description: "Triggers Textract Lambda when a file is uploaded to the S3 bucket with a specific prefix."
+      EventPattern:
+        source:
+          - "aws.s3"
+        detail-type:
+          - "Object Created"
+        detail:
+          bucket:
+            name:
+              - !Ref BucketName
+          object:
+            key:
+              prefix:
+                - !Ref RawFilesPrefix
+      Targets:
+        - Arn: !GetAtt TextractLambda.Arn
+          Id: "TextractLambdaTarget"
