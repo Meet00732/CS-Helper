@@ -12,7 +12,7 @@ Parameters:
 
 Resources:
 
-  # IAM Role for Lambda with Textract permissions
+  # IAM Role for Textract Lambda
   TextractLambdaRole:
     Type: AWS::IAM::Role
     Properties:
@@ -49,7 +49,7 @@ Resources:
                   - "logs:PutLogEvents"
                 Resource: "arn:aws:logs:*:*:*"
 
-  # Lambda Function
+  # Textract Lambda Function
   TextractLambda:
     Type: AWS::Lambda::Function
     Properties:
@@ -63,33 +63,48 @@ Resources:
       Timeout: 120
       MemorySize: 512
 
-  # Lambda Permission for S3 Invocation
-  TextractLambdaPermission:
-    Type: AWS::Lambda::Permission
+  # IAM Role for Notification Lambda
+  NotificationLambdaRole:
+    Type: AWS::IAM::Role
+    DependsOn: TextractLambda  # Ensure TextractLambda is created first
     Properties:
-      FunctionName: !GetAtt TextractLambda.Arn
-      Action: lambda:InvokeFunction
-      Principal: s3.amazonaws.com
-      SourceArn: !Sub "arn:aws:s3:::${BucketName}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: S3AccessPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "s3:GetBucketNotification"
+                  - "s3:PutBucketNotification"
+                  - "s3:GetObject"
+                  - "s3:ListBucket"
+                Resource: "arn:aws:s3:::${BucketName}/*"
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: "arn:aws:logs:*:*:*"
 
-  # Custom Resource to Add Notification Configuration
-  S3NotificationConfiguration:
-    Type: Custom::S3Notification
-    DependsOn: TextractLambda  # Ensures Lambda is created before this configuration
-    Properties:
-      ServiceToken: !GetAtt NotificationLambda.Arn
-      BucketName: !Ref BucketName
-      LambdaArn: !GetAtt TextractLambda.Arn
-      Prefix: !Ref RawFilesPrefix
-
-  # Lambda for Managing S3 Notifications
+  # Notification Lambda Function
   NotificationLambda:
     Type: AWS::Lambda::Function
+    DependsOn: TextractLambdaRole  # Ensure IAM role for NotificationLambda is created after TextractLambdaRole
     Properties:
-      Handler: index.handler
+      FunctionName: "NotificationLambda"
       Runtime: python3.8
-      Timeout: 30
+      Handler: index.handler
       Role: !GetAtt NotificationLambdaRole.Arn
+      Timeout: 30
       Code:
         ZipFile: |
           import boto3
@@ -103,6 +118,7 @@ Resources:
               try:
                   # Get current notification configuration
                   current_config = s3.get_bucket_notification_configuration(Bucket=bucket_name)
+                  current_config.pop("ResponseMetadata", None)
 
                   # Add Lambda trigger
                   current_config.setdefault('LambdaFunctionConfigurations', []).append({
@@ -124,36 +140,17 @@ Resources:
               except Exception as e:
                   cfnresponse.send(event, context, cfnresponse.FAILED, {'Message': str(e)})
 
-  # IAM Role for Notification Lambda
-  NotificationLambdaRole:
-    Type: AWS::IAM::Role
+  # Custom Resource to Set S3 Notification
+  S3NotificationConfiguration:
+    Type: Custom::S3Notification
+    DependsOn: NotificationLambda  # Ensure Notification Lambda is created first
     Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - lambda.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: S3AccessPolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "s3:GetBucketNotification"
-                  - "s3:PutBucketNotification"
-                Resource: !Sub "arn:aws:s3:::${BucketName}"
-              - Effect: Allow
-                Action:
-                  - "logs:CreateLogGroup"
-                  - "logs:CreateLogStream"
-                  - "logs:PutLogEvents"
-                Resource: "arn:aws:logs:*:*:*"
+      ServiceToken: !GetAtt NotificationLambda.Arn
+      BucketName: !Ref BucketName
+      LambdaArn: !GetAtt TextractLambda.Arn
+      Prefix: !Ref RawFilesPrefix
 
 Outputs:
-  BucketName:
-    Description: "Name of the S3 bucket"
-    Value: !Ref BucketName
+  TextractLambdaArn:
+    Description: "ARN of the Textract Lambda Function"
+    Value: !GetAtt TextractLambda.Arn
