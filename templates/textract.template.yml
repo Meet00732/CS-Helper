@@ -48,12 +48,6 @@ Resources:
                   - "logs:CreateLogStream"
                   - "logs:PutLogEvents"
                 Resource: "arn:aws:logs:*:*:*"
-              - Effect: Allow
-                Action:
-                  - "events:PutTargets"
-                  - "events:PutRule"
-                  - "events:DeleteRule"
-                Resource: "*"
 
   # Lambda Function
   TextractLambda:
@@ -69,34 +63,49 @@ Resources:
       Timeout: 120
       MemorySize: 512
 
-  # Lambda Permission for S3 Invocation
-  TextractLambdaPermission:
-    Type: AWS::Lambda::Permission
+  # S3 Bucket Policy for Lambda Trigger
+  S3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
     Properties:
-      FunctionName: !GetAtt TextractLambda.Arn
-      Action: lambda:InvokeFunction
-      Principal: s3.amazonaws.com
-      SourceArn: !Sub "arn:aws:s3:::${BucketName}"
+      Bucket: !Ref BucketName
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowLambdaTrigger
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - "s3:PutObject"
+            Resource:
+              - !Sub "arn:aws:s3:::${BucketName}/${RawFilesPrefix}*"
+            Condition:
+              StringEquals:
+                aws:SourceArn: !GetAtt TextractLambda.Arn
 
-  # EventBridge Rule for S3 Uploads
-  S3EventBridgeRule:
-    Type: AWS::Events::Rule
+  # Custom Role for Trigger Execution
+  TriggerExecutionRole:
+    Type: AWS::IAM::Role
     Properties:
-      Name: "S3UploadEventRule"
-      Description: "Triggers Textract Lambda when a file is uploaded to the S3 bucket with a specific prefix."
-      EventPattern:
-        source:
-          - "aws.s3"
-        detail-type:
-          - "Object Created"
-        detail:
-          bucket:
-            name:
-              - !Ref BucketName
-          object:
-            key:
-              prefix:
-                - !Ref RawFilesPrefix
-      Targets:
-        - Arn: !GetAtt TextractLambda.Arn
-          Id: "TextractLambdaTarget"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: TriggerS3Access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "s3:PutObject"
+                Resource:
+                  - !Sub "arn:aws:s3:::${BucketName}/${RawFilesPrefix}*"
+
+Outputs:
+  BucketName:
+    Description: "Name of the S3 bucket"
+    Value: !Ref BucketName
