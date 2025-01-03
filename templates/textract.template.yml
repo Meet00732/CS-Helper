@@ -65,20 +65,10 @@ Resources:
       Principal: s3.amazonaws.com
       SourceArn: !Sub "arn:aws:s3:::${BucketName}"
 
-  # Custom Resource for S3 Notification
-  S3NotificationCustomResource:
-    Type: Custom::S3Notification
-    DependsOn: TextractLambdaPermission
-    Properties:
-      ServiceToken: !GetAtt NotificationConfigLambda.Arn
-      BucketName: !Ref BucketName
-      FunctionArn: !GetAtt TextractLambda.Arn
-      Prefix: !Ref RawFilesPrefix
-      Event: "s3:ObjectCreated:*"
-
   # Lambda to Configure Notifications
   NotificationConfigLambda:
     Type: AWS::Lambda::Function
+    DependsOn: NotificationConfigLambdaRole
     Properties:
       FunctionName: "NotificationConfigLambda"
       Runtime: python3.8
@@ -125,7 +115,7 @@ Resources:
                       )
                   cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
               except Exception as e:
-                  print(f\"Error: {str(e)}\")
+                  print(f"Error: {str(e)}")
                   cfnresponse.send(event, context, cfnresponse.FAILED, {})
       Timeout: 60
       MemorySize: 128
@@ -157,6 +147,19 @@ Resources:
                   - "logs:CreateLogStream"
                   - "logs:PutLogEvents"
                 Resource: "arn:aws:logs:*:*:*"
+
+  # Custom Resource for S3 Notification
+  S3NotificationCustomResource:
+    Type: Custom::S3Notification
+    DependsOn:
+      - TextractLambdaPermission
+      - NotificationConfigLambda
+    Properties:
+      ServiceToken: !GetAtt NotificationConfigLambda.Arn
+      BucketName: !Ref BucketName
+      FunctionArn: !GetAtt TextractLambda.Arn
+      Prefix: !Ref RawFilesPrefix
+      Event: "s3:ObjectCreated:*"
 
 Outputs:
   LambdaFunctionName:
