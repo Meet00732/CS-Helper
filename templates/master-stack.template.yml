@@ -14,7 +14,7 @@ Resources:
   S3BucketStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub "https://s3.amazonaws.com/${BucketName}/template/s3.template.yaml"
+      TemplateURL: !Sub "https://s3.amazonaws.com/${BucketName}/template/s3.template.yml"
       Parameters:
         BucketName: !Ref BucketName
 
