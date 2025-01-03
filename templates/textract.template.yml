@@ -63,47 +63,29 @@ Resources:
       Timeout: 120
       MemorySize: 512
 
-  # S3 Bucket Policy for Lambda Trigger
-  S3BucketPolicy:
-    Type: AWS::S3::BucketPolicy
+  # S3 Bucket Notification Configuration
+  S3BucketNotificationConfiguration:
+    Type: AWS::S3::Bucket
     Properties:
-      Bucket: !Ref BucketName
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Sid: AllowLambdaTrigger
-            Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action:
-              - "s3:PutObject"
-            Resource:
-              - !Sub "arn:aws:s3:::${BucketName}/${RawFilesPrefix}*"
-            Condition:
-              StringEquals:
-                aws:SourceArn: !GetAtt TextractLambda.Arn
+      BucketName: !Ref BucketName
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: "s3:ObjectCreated:*"
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: !Ref RawFilesPrefix
+            Function: !GetAtt TextractLambda.Arn
 
-  # Custom Role for Trigger Execution
-  TriggerExecutionRole:
-    Type: AWS::IAM::Role
+  # Lambda Permission for S3 Invocation
+  TextractLambdaPermission:
+    Type: AWS::Lambda::Permission
     Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: TriggerS3Access
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "s3:PutObject"
-                Resource:
-                  - !Sub "arn:aws:s3:::${BucketName}/${RawFilesPrefix}*"
+      FunctionName: !GetAtt TextractLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !Sub "arn:aws:s3:::${BucketName}"
 
 Outputs:
   BucketName:
