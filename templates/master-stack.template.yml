@@ -4,12 +4,11 @@ Description: "Master Stack for Summarization Pipeline"
 Parameters:
   BucketName:
     Type: AWS::SSM::Parameter::Value<String>
-    Description: "The name of the S3 bucket"
+    Description: "The name of the s3 bucket"
 
   RawFilesPrefix:
-    Type: String
-    Default: "summarization-raw-files/"
-    Description: "Prefix for raw files in S3 bucket"
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: "Prefix of the folder where raw files are stored"
 
 Resources:
   S3BucketStack:
