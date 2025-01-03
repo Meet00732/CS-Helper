@@ -4,7 +4,7 @@ Description: "SSM Parameter Store Template for Summarization Pipeline"
 Parameters:
   BucketName:
     Type: String
-    default: "cs-helper"
+    Default: "cs-helper"
     Description: "The name of the s3 bucket"
 
   RawFilesPrefix:
