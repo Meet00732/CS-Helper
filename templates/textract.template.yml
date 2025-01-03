@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "Textract Processing Pipeline with Custom Notification for Existing Bucket"
+Description: "Textract Processing Pipeline"
 
 Parameters:
   BucketName:
@@ -11,51 +11,9 @@ Parameters:
     Description: "Prefix for raw files in S3 bucket"
 
 Resources:
-  # Custom Resource Lambda Function
-  NotificationLambda:
-    Type: AWS::Lambda::Function
-    Properties:
-      Handler: index.handler
-      Runtime: python3.8
-      Timeout: 30
-      Role: !GetAtt NotificationLambdaRole.Arn
-      Code:
-        ZipFile: |
-          import boto3
-          import cfnresponse
 
-          def handler(event, context):
-              s3 = boto3.client('s3')
-              bucket_name = event['ResourceProperties']['BucketName']
-              lambda_arn = event['ResourceProperties']['LambdaArn']
-              prefix = event['ResourceProperties']['Prefix']
-
-              try:
-                  # Add notification configuration to the bucket
-                  s3.put_bucket_notification_configuration(
-                      Bucket=bucket_name,
-                      NotificationConfiguration={
-                          'LambdaFunctionConfigurations': [
-                              {
-                                  'LambdaFunctionArn': lambda_arn,
-                                  'Events': ['s3:ObjectCreated:*'],
-                                  'Filter': {
-                                      'Key': {
-                                          'FilterRules': [
-                                              {'Name': 'prefix', 'Value': prefix}
-                                          ]
-                                      }
-                                  }
-                              }
-                          ]
-                      }
-                  )
-                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
-              except Exception as e:
-                  cfnresponse.send(event, context, cfnresponse.FAILED, {'Message': str(e)})
-
-  # IAM Role for Notification Lambda
-  NotificationLambdaRole:
+  # IAM Role for Lambda with Textract permissions
+  TextractLambdaRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -67,15 +25,23 @@ Resources:
                 - lambda.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: S3NotificationPolicy
+        - PolicyName: TextractAccess
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
-                  - "s3:PutBucketNotificationConfiguration"
-                  - "s3:GetBucketNotificationConfiguration"
-                Resource: !Sub "arn:aws:s3:::${BucketName}"
+                  - "textract:*"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "s3:GetObject"
+                  - "s3:PutObject"
+                Resource: !Sub "arn:aws:s3:::${BucketName}/*"
+              - Effect: Allow
+                Action:
+                  - "ssm:GetParameter"
+                Resource: !Sub "arn:aws:ssm:*:*:parameter/*"
               - Effect: Allow
                 Action:
                   - "logs:CreateLogGroup"
@@ -83,16 +49,7 @@ Resources:
                   - "logs:PutLogEvents"
                 Resource: "arn:aws:logs:*:*:*"
 
-  # Custom Resource for Notification
-  S3Notification:
-    Type: Custom::S3Notification
-    Properties:
-      ServiceToken: !GetAtt NotificationLambda.Arn
-      BucketName: !Ref BucketName
-      LambdaArn: !GetAtt TextractLambda.Arn
-      Prefix: !Ref RawFilesPrefix
-
-  # Textract Lambda Function
+  # Lambda Function
   TextractLambda:
     Type: AWS::Lambda::Function
     Properties:
@@ -105,6 +62,31 @@ Resources:
         S3Key: "textract_lambda.zip"
       Timeout: 120
       MemorySize: 512
+
+  # S3 Bucket Notification Configuration
+  S3BucketNotificationConfiguration:
+    Type: AWS::S3::Bucket
+    DependsOn: TextractLambda  # Ensures Lambda is created before this configuration
+    Properties:
+      BucketName: !Ref BucketName
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: "s3:ObjectCreated:*"
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: !Ref RawFilesPrefix
+            Function: !GetAtt TextractLambda.Arn
+
+  # Lambda Permission for S3 Invocation
+  TextractLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt TextractLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !Sub "arn:aws:s3:::${BucketName}"
 
 Outputs:
   BucketName:
