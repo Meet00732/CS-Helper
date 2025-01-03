@@ -72,7 +72,7 @@ Resources:
     Properties:
       FunctionName: "NotificationConfigLambda"
       Runtime: python3.8
-      Handler: s3_notification_config.handler
+      Handler: index.handler  # Correct handler reference
       Role: !GetAtt NotificationConfigLambdaRole.Arn
       Code:
         ZipFile: |
@@ -119,7 +119,7 @@ Resources:
                   cfnresponse.send(event, context, cfnresponse.FAILED, {})
       Timeout: 60
       MemorySize: 128
-
+      
   # IAM Role for NotificationConfig Lambda
   NotificationConfigLambdaRole:
     Type: AWS::IAM::Role
