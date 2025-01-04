@@ -10,6 +10,10 @@ Parameters:
     Type: String
     Description: "Prefix for raw files in the S3 bucket"
 
+  ProcessedFilesPrefix:
+    Type: String
+    Description: "Prefix of the folder where processed files are stored"
+
 Resources:
   # IAM Role for Lambda
   TextractLambdaRole:
