@@ -13,7 +13,7 @@ Parameters:
     Default: RawFilesPrefix
 
   ProcessedFilesPrefix:
-    Type: String
+    Type: AWS::SSM::Parameter::Value<String>
     Description: "Prefix of the folder where processed files are stored"
     Default: ProcessedFilesPrefix
 
