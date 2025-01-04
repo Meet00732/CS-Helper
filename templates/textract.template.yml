@@ -12,7 +12,7 @@ Parameters:
 
 Resources:
   # IAM Role for Lambda
-    TextractLambdaRole:
+  TextractLambdaRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -59,7 +59,6 @@ Resources:
                   - "logs:CreateLogStream"
                   - "logs:PutLogEvents"
                 Resource: "arn:aws:logs:*:*:*"
-
 
   # Lambda Function
   TextractLambda:
