@@ -1,14 +1,21 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "Textract Processing Pipeline"
+Description: "Lambda function with S3 trigger setup for an existing bucket."
 
 Parameters:
   BucketName:
     Type: String
     Description: "The name of the S3 bucket"
 
-Resources:
+  RawFilesPrefix:
+    Type: String
+    Description: "Prefix for raw files in the S3 bucket"
 
-  # IAM Role for Lambda with Textract permissions
+  ProcessedFilesPrefix:
+    Type: String
+    Description: "Prefix of the folder where processed files are stored"
+
+Resources:
+  # IAM Role for Lambda
   TextractLambdaRole:
     Type: AWS::IAM::Role
     Properties:
@@ -21,23 +28,35 @@ Resources:
                 - lambda.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: TextractAccess
+        - PolicyName: LambdaS3TextractAccess
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
-              - Effect: Allow
-                Action:
-                  - "textract:*"
-                Resource: "*"
+              # Permissions for S3
               - Effect: Allow
                 Action:
                   - "s3:GetObject"
                   - "s3:PutObject"
-                Resource: !Sub "arn:aws:s3:::${BucketName}/*"
+                Resource:
+                  - !Sub "arn:aws:s3:::${BucketName}/${RawFilesPrefix}*"
+                  - !Sub "arn:aws:s3:::${BucketName}/${ProcessedFilesPrefix}*"
+
+              # Permissions for Textract
+              - Effect: Allow
+                Action:
+                  - "textract:AnalyzeDocument"
+                Resource: "*"
+
+              # Permissions for SSM Parameter Store
               - Effect: Allow
                 Action:
                   - "ssm:GetParameter"
-                Resource: !Sub "arn:aws:ssm:*:*:parameter/*"
+                  - "ssm:GetParameters"
+                  - "ssm:GetParameterHistory"
+                Resource:
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
+
+              # Permissions for CloudWatch Logs (for debugging/logging)
               - Effect: Allow
                 Action:
                   - "logs:CreateLogGroup"
@@ -48,6 +67,7 @@ Resources:
   # Lambda Function
   TextractLambda:
     Type: AWS::Lambda::Function
+    DependsOn: TextractLambdaRole
     Properties:
       FunctionName: "TextractProcessingLambda"
       Runtime: python3.8
@@ -62,9 +82,134 @@ Resources:
   # Lambda Permission for S3 Invocation
   TextractLambdaPermission:
     Type: AWS::Lambda::Permission
+    DependsOn: TextractLambda
     Properties:
       FunctionName: !GetAtt TextractLambda.Arn
       Action: lambda:InvokeFunction
       Principal: s3.amazonaws.com
       SourceArn: !Sub "arn:aws:s3:::${BucketName}"
 
+  # Lambda to Configure Notifications
+  NotificationConfigLambda:
+    Type: AWS::Lambda::Function
+    DependsOn: NotificationConfigLambdaRole
+    Properties:
+      FunctionName: "NotificationConfigLambda"
+      Runtime: python3.8
+      Handler: index.handler
+      Role: !GetAtt NotificationConfigLambdaRole.Arn
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+          import json
+
+          def handler(event, context):
+              s3 = boto3.client('s3')
+              print(f"Event received: {json.dumps(event)}")
+
+              try:
+                  request_type = event['RequestType']
+                  bucket_name = event['ResourceProperties']['BucketName']
+                  function_arn = event['ResourceProperties']['FunctionArn']
+                  prefix = event['ResourceProperties']['Prefix']
+                  event_type = event['ResourceProperties']['Event']
+
+                  if request_type == 'Create' or request_type == 'Update':
+                      print("Handling Create or Update event")
+                      try:
+                          s3.put_bucket_notification_configuration(
+                              Bucket=bucket_name,
+                              NotificationConfiguration={
+                                  'LambdaFunctionConfigurations': [
+                                      {
+                                          'LambdaFunctionArn': function_arn,
+                                          'Events': [event_type],
+                                          'Filter': {
+                                              'Key': {
+                                                  'FilterRules': [
+                                                      {'Name': 'prefix', 'Value': prefix}
+                                                  ]
+                                              }
+                                          }
+                                      }
+                                  ]
+                              }
+                          )
+                          print("Notification configuration set successfully")
+                          cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                      except Exception as e:
+                          print(f"Error during Create/Update: {e}")
+                          cfnresponse.send(event, context, cfnresponse.FAILED, {"Error": str(e)})
+
+                  elif request_type == 'Delete':
+                      print("Handling Delete event")
+                      try:
+                          s3.put_bucket_notification_configuration(
+                              Bucket=bucket_name,
+                              NotificationConfiguration={}
+                          )
+                          print("Notification configuration removed successfully")
+                      except s3.exceptions.NoSuchBucket:
+                          print("Bucket does not exist; skipping notification cleanup.")
+                          cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                          return
+                      except Exception as e:
+                          print(f"Error removing notification configuration: {e}")
+                          cfnresponse.send(event, context, cfnresponse.SUCCESS, {"Error": str(e)})
+                          return
+
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+
+              except Exception as e:
+                  print(f"Unhandled error: {e}")
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {"UnhandledError": str(e)})
+
+      Timeout: 60
+      MemorySize: 128
+
+  # IAM Role for NotificationConfig Lambda
+  NotificationConfigLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: S3NotificationAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "s3:PutBucketNotification"
+                Resource: !Sub "arn:aws:s3:::${BucketName}"
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: "arn:aws:logs:*:*:*"
+
+  # Custom Resource for S3 Notification
+  S3NotificationCustomResource:
+    Type: Custom::S3Notification
+    DependsOn:
+      - TextractLambdaPermission
+      - NotificationConfigLambda
+    Properties:
+      ServiceToken: !GetAtt NotificationConfigLambda.Arn
+      BucketName: !Ref BucketName
+      FunctionArn: !GetAtt TextractLambda.Arn
+      Prefix: !Ref RawFilesPrefix
+      Event: "s3:ObjectCreated:*"
+
+Outputs:
+  LambdaFunctionName:
+    Description: "Name of the Lambda function"
+    Value: !Ref TextractLambda

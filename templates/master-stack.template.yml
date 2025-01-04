@@ -3,42 +3,34 @@ Description: "Master Stack for Summarization Pipeline"
 
 Parameters:
   BucketName:
-    Type: String
-    Default: "cs-helper"
-    Description: "The name of the S3 bucket"
-  
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: "The name of the s3 bucket"
+    Default: BucketName
+
   RawFilesPrefix:
-    Type: String
-    Default: "summarization-raw-files/"
-    Description: "Prefix for raw files in S3 bucket"
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: "Prefix of the folder where raw files are stored"
+    Default: RawFilesPrefix
 
   ProcessedFilesPrefix:
-    Type: String
-    Default: "summarization-processed-files/"
-    Description: "Prefix for processed files in S3 bucket"
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: "Prefix of the folder where processed files are stored"
+    Default: ProcessedFilesPrefix
 
 Resources:
   S3BucketStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub "https://s3.amazonaws.com/${BucketName}/template/s3.template.yaml"
+      TemplateURL: !Sub "https://s3.amazonaws.com/${BucketName}/template/s3.template.yml"
       Parameters:
         BucketName: !Ref BucketName
-
-  SSMParameterStack:
-    Type: AWS::CloudFormation::Stack
-    DependsOn: S3BucketStack  # Ensure S3 stack is created first
-    Properties:
-      TemplateURL: !Sub "https://s3.amazonaws.com/${BucketName}/template/ssm.template.yaml"
-      Parameters:
-        BucketName: !Ref BucketName
-        RawFilesPrefix: !Ref RawFilesPrefix
-        ProcessedFilesPrefix: !Ref ProcessedFilesPrefix
 
   TextractPipelineStack:
     Type: AWS::CloudFormation::Stack
-    DependsOn: SSMParameterStack  # Ensure SSM stack is created before Textract
+    DependsOn: S3BucketStack
     Properties:
       TemplateURL: !Sub "https://s3.amazonaws.com/${BucketName}/template/textract.template.yml"
       Parameters:
         BucketName: !Ref BucketName
+        RawFilesPrefix: !Ref RawFilesPrefix
+        ProcessedFilesPrefix: !Ref ProcessedFilesPrefix

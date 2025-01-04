@@ -4,6 +4,7 @@ Description: "SSM Parameter Store Template for Summarization Pipeline"
 Parameters:
   BucketName:
     Type: String
+    Default: "cs-helper"
     Description: "The name of the s3 bucket"
 
   RawFilesPrefix:
@@ -21,14 +22,14 @@ Resources:
   BucketNameParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: "S3-Bucket-Name"
+      Name: BucketName
       Type: String
       Value: !Ref BucketName
 
   RawFilesPrefixParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: "Raw-Files-Prefix"
+      Name: RawFilesPrefix
       Type: String
       Value: !Ref RawFilesPrefix
 
@@ -36,7 +37,7 @@ Resources:
   ProcessedFilesPrefixParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: "Processed-Files-Prefix"
+      Name: ProcessedFilesPrefix
       Type: String
       Value: !Ref ProcessedFilesPrefix
 

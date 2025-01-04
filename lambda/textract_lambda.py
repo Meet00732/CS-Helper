@@ -9,9 +9,9 @@ def handler(event, context):
     # Get bucket name and file key from the event
     # bucket_name = event['Records'][0]['s3']['bucket']['name']
     key = event['Records'][0]['s3']['object']['key']
-    bucket_name = configuration.get_parameter('S3-Bucket-Name')
-    raw_prefix = configuration.get_parameter('Raw-Files-Prefix')
-    processed_prefix = configuration.get_parameter('Processed-Files-Prefix')
+    bucket_name = configuration.get_parameter('BucketName')
+    raw_prefix = configuration.get_parameter('RawFilesPrefix')
+    processed_prefix = configuration.get_parameter('ProcessedFilesPrefix')
 
     print(f"Raw Prefix: {raw_prefix}")
     print(f"Processed Prefix: {processed_prefix}")

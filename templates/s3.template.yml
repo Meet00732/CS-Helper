@@ -4,7 +4,6 @@ Description: "S3 Buckets Template for Summarization Pipeline"
 Parameters:
   BucketName:
     Type: String
-    Default: "cs-helper"
     Description: "The name of the pre-existing S3 bucket"
 
 Resources:
@@ -87,8 +86,3 @@ Resources:
                   - "logs:CreateLogStream"
                   - "logs:PutLogEvents"
                 Resource: "arn:aws:logs:*:*:*"
-
-Outputs:
-  BucketName:
-    Description: "Name of the pre-existing S3 bucket"
-    Value: !Ref BucketName
