@@ -12,7 +12,7 @@ Parameters:
 
 Resources:
   # IAM Role for Lambda
-  TextractLambdaRole:
+    TextractLambdaRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -24,27 +24,42 @@ Resources:
                 - lambda.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: LambdaS3Access
+        - PolicyName: LambdaS3TextractAccess
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
+              # Permissions for S3
               - Effect: Allow
                 Action:
                   - "s3:GetObject"
                   - "s3:PutObject"
-                Resource: !Sub "arn:aws:s3:::${BucketName}/*"
+                Resource:
+                  - !Sub "arn:aws:s3:::${BucketName}/${RawFilesPrefix}*"
+                  - !Sub "arn:aws:s3:::${BucketName}/${ProcessedFilesPrefix}*"
+
+              # Permissions for Textract
+              - Effect: Allow
+                Action:
+                  - "textract:AnalyzeDocument"
+                Resource: "*"
+
+              # Permissions for SSM Parameter Store
+              - Effect: Allow
+                Action:
+                  - "ssm:GetParameter"
+                  - "ssm:GetParameters"
+                  - "ssm:GetParameterHistory"
+                Resource:
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
+
+              # Permissions for CloudWatch Logs (for debugging/logging)
               - Effect: Allow
                 Action:
                   - "logs:CreateLogGroup"
                   - "logs:CreateLogStream"
                   - "logs:PutLogEvents"
                 Resource: "arn:aws:logs:*:*:*"
-              - Effect: Allow
-                Action:
-                  - "ssm:GetParameter"
-                  - "ssm:GetParameters"
-                  - "ssm:GetParameterHistory"
-                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
+
 
   # Lambda Function
   TextractLambda:
