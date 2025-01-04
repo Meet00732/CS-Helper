@@ -12,6 +12,11 @@ Parameters:
     Description: "Prefix of the folder where raw files are stored"
     Default: RawFilesPrefix
 
+  ProcessedFilesPrefix:
+    Type: String
+    Description: "Prefix of the folder where processed files are stored"
+    Default: ProcessedFilesPrefix
+
 Resources:
   S3BucketStack:
     Type: AWS::CloudFormation::Stack
@@ -28,3 +33,4 @@ Resources:
       Parameters:
         BucketName: !Ref BucketName
         RawFilesPrefix: !Ref RawFilesPrefix
+        ProcessedFilesPrefix: !Ref ProcessedFilesPrefix
