@@ -67,87 +67,82 @@ Resources:
 
   # Lambda to Configure Notifications
   NotificationConfigLambda:
-  Type: AWS::Lambda::Function
-  DependsOn: NotificationConfigLambdaRole
-  Properties:
-    FunctionName: "NotificationConfigLambda"
-    Runtime: python3.8
-    Handler: index.handler
-    Role: !GetAtt NotificationConfigLambdaRole.Arn
-    Code:
-      ZipFile: |
-        import boto3
-        import cfnresponse
-        import json
+    Type: AWS::Lambda::Function
+    DependsOn: NotificationConfigLambdaRole
+    Properties:
+      FunctionName: "NotificationConfigLambda"
+      Runtime: python3.8
+      Handler: index.handler
+      Role: !GetAtt NotificationConfigLambdaRole.Arn
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+          import json
 
-        def handler(event, context):
-            s3 = boto3.client('s3')
-            print(f"Event received: {json.dumps(event)}")
+          def handler(event, context):
+              s3 = boto3.client('s3')
+              print(f"Event received: {json.dumps(event)}")
 
-            try:
-                request_type = event['RequestType']
-                bucket_name = event['ResourceProperties']['BucketName']
-                function_arn = event['ResourceProperties']['FunctionArn']
-                prefix = event['ResourceProperties']['Prefix']
-                event_type = event['ResourceProperties']['Event']
+              try:
+                  request_type = event['RequestType']
+                  bucket_name = event['ResourceProperties']['BucketName']
+                  function_arn = event['ResourceProperties']['FunctionArn']
+                  prefix = event['ResourceProperties']['Prefix']
+                  event_type = event['ResourceProperties']['Event']
 
-                if request_type == 'Create' or request_type == 'Update':
-                    print("Handling Create or Update event")
-                    try:
-                        # Set S3 notification configuration
-                        s3.put_bucket_notification_configuration(
-                            Bucket=bucket_name,
-                            NotificationConfiguration={
-                                'LambdaFunctionConfigurations': [
-                                    {
-                                        'LambdaFunctionArn': function_arn,
-                                        'Events': [event_type],
-                                        'Filter': {
-                                            'Key': {
-                                                'FilterRules': [
-                                                    {'Name': 'prefix', 'Value': prefix}
-                                                ]
-                                            }
-                                        }
-                                    }
-                                ]
-                            }
-                        )
-                        print("Notification configuration set successfully")
-                        cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
-                    except Exception as e:
-                        print(f"Error during Create/Update: {e}")
-                        cfnresponse.send(event, context, cfnresponse.FAILED, {"Error": str(e)})
+                  if request_type == 'Create' or request_type == 'Update':
+                      print("Handling Create or Update event")
+                      try:
+                          s3.put_bucket_notification_configuration(
+                              Bucket=bucket_name,
+                              NotificationConfiguration={
+                                  'LambdaFunctionConfigurations': [
+                                      {
+                                          'LambdaFunctionArn': function_arn,
+                                          'Events': [event_type],
+                                          'Filter': {
+                                              'Key': {
+                                                  'FilterRules': [
+                                                      {'Name': 'prefix', 'Value': prefix}
+                                                  ]
+                                              }
+                                          }
+                                      }
+                                  ]
+                              }
+                          )
+                          print("Notification configuration set successfully")
+                          cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                      except Exception as e:
+                          print(f"Error during Create/Update: {e}")
+                          cfnresponse.send(event, context, cfnresponse.FAILED, {"Error": str(e)})
 
-                elif request_type == 'Delete':
-                    print("Handling Delete event")
-                    try:
-                        # Attempt to remove the notification configuration
-                        s3.put_bucket_notification_configuration(
-                            Bucket=bucket_name,
-                            NotificationConfiguration={}
-                        )
-                        print("Notification configuration removed successfully")
-                    except s3.exceptions.NoSuchBucket:
-                        print("Bucket does not exist; skipping notification cleanup.")
-                        # Respond with success if bucket is already deleted
-                        cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
-                        return
-                    except Exception as e:
-                        print(f"Error removing notification configuration: {e}")
-                        # Respond with success even if cleanup fails
-                        cfnresponse.send(event, context, cfnresponse.SUCCESS, {"Error": str(e)})
-                        return
+                  elif request_type == 'Delete':
+                      print("Handling Delete event")
+                      try:
+                          s3.put_bucket_notification_configuration(
+                              Bucket=bucket_name,
+                              NotificationConfiguration={}
+                          )
+                          print("Notification configuration removed successfully")
+                      except s3.exceptions.NoSuchBucket:
+                          print("Bucket does not exist; skipping notification cleanup.")
+                          cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                          return
+                      except Exception as e:
+                          print(f"Error removing notification configuration: {e}")
+                          cfnresponse.send(event, context, cfnresponse.SUCCESS, {"Error": str(e)})
+                          return
 
-                    # Always send a SUCCESS response for Delete
-                    cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
 
-            except Exception as e:
-                print(f"Unhandled error: {e}")
-                cfnresponse.send(event, context, cfnresponse.FAILED, {"UnhandledError": str(e)})
+              except Exception as e:
+                  print(f"Unhandled error: {e}")
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {"UnhandledError": str(e)})
 
-    Timeout: 60
-    MemorySize: 128
+      Timeout: 60
+      MemorySize: 128
 
   # IAM Role for NotificationConfig Lambda
   NotificationConfigLambdaRole:
