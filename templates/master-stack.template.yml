@@ -43,3 +43,4 @@ Resources:
         BucketName: !Ref BucketName
         RawFilesPrefix: !Ref RawFilesPrefix
         ToBeProcessedFilesPrefix: !Ref ToBeProcessedFilesPrefix
+        ProcessedFilesPrefix: !Ref ProcessedFilesPrefix

@@ -13,6 +13,10 @@ Parameters:
   ToBeProcessedFilesPrefix:
     Type: String
     Description: "Prefix of the folder where processed files are stored"
+  
+  ProcessedFilesPrefix:
+    Type: String
+    Description: "Prefix of the folder where processed files are stored"
 
 Resources:
   # IAM Role for Lambda
@@ -64,7 +68,7 @@ Resources:
                   - "logs:PutLogEvents"
                 Resource: "arn:aws:logs:*:*:*"
 
-  # Lambda Function
+  # Textract Lambda Function
   TextractLambda:
     Type: AWS::Lambda::Function
     DependsOn: TextractLambdaRole
@@ -88,6 +92,34 @@ Resources:
       Action: lambda:InvokeFunction
       Principal: s3.amazonaws.com
       SourceArn: !Sub "arn:aws:s3:::${BucketName}"
+
+
+  # Text Cleaning Lambda
+  TextCleaningLambda:
+    Type: AWS::Lambda::Function
+    DependsOn: LambdaExecutionRole
+    Properties:
+      FunctionName: "TextCleaningLambda"
+      Runtime: python3.8
+      Handler: text_cleaning_lambda.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        S3Bucket: !Ref BucketName
+        S3Key: "textract_lambda.zip"
+      Timeout: 120
+      MemorySize: 512
+
+  # Lambda Permission for TextCleaningLambda
+  TextCleaningLambdaPermission:
+    Type: AWS::Lambda::Permission
+    DependsOn: TextCleaningLambda
+    Properties:
+      FunctionName: !GetAtt TextCleaningLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !Sub "arn:aws:s3:::${BucketName}"
+
+
 
   # Lambda to Configure Notifications
   NotificationConfigLambda:
@@ -196,20 +228,33 @@ Resources:
                   - "logs:PutLogEvents"
                 Resource: "arn:aws:logs:*:*:*"
 
-  # Custom Resource for S3 Notification
-  S3NotificationCustomResource:
+  # S3 Trigger for TextractProcessingLambda
+  S3NotificationCustomResourceForTextract:
     Type: Custom::S3Notification
-    DependsOn:
-      - TextractLambdaPermission
-      - NotificationConfigLambda
+    DependsOn: TextractProcessingLambdaPermission
     Properties:
       ServiceToken: !GetAtt NotificationConfigLambda.Arn
       BucketName: !Ref BucketName
-      FunctionArn: !GetAtt TextractLambda.Arn
+      FunctionArn: !GetAtt TextractProcessingLambda.Arn
       Prefix: !Ref RawFilesPrefix
       Event: "s3:ObjectCreated:*"
 
+  # S3 Trigger for TextCleaningLambda
+  S3NotificationCustomResourceForTextCleaning:
+    Type: Custom::S3Notification
+    DependsOn: TextCleaningLambdaPermission
+    Properties:
+      ServiceToken: !GetAtt NotificationConfigLambda.Arn
+      BucketName: !Ref BucketName
+      FunctionArn: !GetAtt TextCleaningLambda.Arn
+      Prefix: !Ref ProcessedFilesPrefix
+      Event: "s3:ObjectCreated:*"
+
 Outputs:
-  LambdaFunctionName:
-    Description: "Name of the Lambda function"
-    Value: !Ref TextractLambda
+  TextractLambdaFunctionName:
+    Description: "Name of the Textract Processing Lambda function"
+    Value: !Ref TextractProcessingLambda
+
+  TextCleaningLambdaFunctionName:
+    Description: "Name of the Text Cleaning Lambda function"
+    Value: !Ref TextCleaningLambda
