@@ -232,7 +232,9 @@ Resources:
   # S3 Trigger for TextractLambda
   S3NotificationCustomResourceForTextract:
     Type: Custom::S3Notification
-    DependsOn: TextractLambdaPermission
+    DependsOn:
+      - TextractLambdaPermission
+      - NotificationConfigLambda
     Properties:
       ServiceToken: !GetAtt NotificationConfigLambda.Arn
       BucketName: !Ref BucketName
@@ -243,10 +245,10 @@ Resources:
   # S3 Trigger for TextCleaningLambda
   S3NotificationCustomResourceForTextCleaning:
     Type: Custom::S3Notification
-    DependsOn: 
+    DependsOn:
+      - S3NotificationCustomResourceForTextract
       - TextCleaningLambdaPermission
       - NotificationConfigLambda
-      - S3NotificationCustomResourceForTextract
     Properties:
       ServiceToken: !GetAtt NotificationConfigLambda.Arn
       BucketName: !Ref BucketName
