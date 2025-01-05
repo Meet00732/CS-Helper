@@ -10,7 +10,7 @@ Parameters:
     Type: String
     Description: "Prefix of the folder where raw files are stored"
 
-  ProcessedFilesPrefix:
+  ToBeProcessedFilesPrefix:
     Type: String
     Description: "Prefix of the folder where processed files are stored"
 
@@ -27,7 +27,7 @@ Resources:
     Properties:
       ServiceToken: !GetAtt S3FolderLambda.Arn
       BucketName: !Ref BucketName
-      Folder: !Ref ProcessedFilesPrefix
+      Folder: !Ref ToBeProcessedFilesPrefix
 
   S3TemplateFolder:
     Type: Custom::S3Folder

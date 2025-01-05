@@ -10,7 +10,7 @@ Parameters:
     Type: String
     Description: "Prefix for raw files in the S3 bucket"
 
-  ProcessedFilesPrefix:
+  ToBeProcessedFilesPrefix:
     Type: String
     Description: "Prefix of the folder where processed files are stored"
 
@@ -39,7 +39,7 @@ Resources:
                   - "s3:PutObject"
                 Resource:
                   - !Sub "arn:aws:s3:::${BucketName}/${RawFilesPrefix}*"
-                  - !Sub "arn:aws:s3:::${BucketName}/${ProcessedFilesPrefix}*"
+                  - !Sub "arn:aws:s3:::${BucketName}/${ToBeProcessedFilesPrefix}*"
 
               # Permissions for Textract
               - Effect: Allow

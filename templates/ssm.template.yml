@@ -12,7 +12,7 @@ Parameters:
     Default: "summarization-raw-files/"
     Description: "Prefix of the folder where raw files are stored"
 
-  ProcessedFilesPrefix:
+  ToBeProcessedFilesPrefix:
     Type: String
     Default: "summarization-to-be-processed-files/"
     Description: "Prefix of the folder where processed files are stored"
@@ -34,11 +34,11 @@ Resources:
       Value: !Ref RawFilesPrefix
 
   
-  ProcessedFilesPrefixParameter:
+  ToBeProcessedFilesPrefixParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: ProcessedFilesPrefix
+      Name: ToBeProcessedFilesPrefix
       Type: String
-      Value: !Ref ProcessedFilesPrefix
+      Value: !Ref ToBeProcessedFilesPrefix
 
   
