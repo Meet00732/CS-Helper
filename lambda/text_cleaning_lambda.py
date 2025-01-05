@@ -108,7 +108,7 @@ def lambda_handler(event, context):
     # Save the processed text to correct s3.
     destination_folder = configuration.get_parameter("ProcessedFilesPrefix")
     file_name = key.split("/")[-1]
-    annotated_key = f"{destination_folder}{file_name.replace(".txt", "_cleaned_annotated.txt")}"
+    annotated_key = f"{destination_folder}{file_name.replace('.txt', '_cleaned_annotated.txt')}"
 
     s3.put_object(Bucket=bucket_name, Key=annotated_key, Body=annotated_text)
 
