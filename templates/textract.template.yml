@@ -233,8 +233,10 @@ Resources:
   S3NotificationCustomResourceForTextract:
     Type: Custom::S3Notification
     DependsOn:
-      - TextractLambdaPermission
-      - NotificationConfigLambda
+    - TextractLambda
+    - TextractLambdaPermission
+    - NotificationConfigLambda
+    - NotificationConfigLambdaRole
     Properties:
       ServiceToken: !GetAtt NotificationConfigLambda.Arn
       BucketName: !Ref BucketName
@@ -247,6 +249,7 @@ Resources:
     Type: Custom::S3Notification
     DependsOn:
       - S3NotificationCustomResourceForTextract
+      - TextCleaningLambda
       - TextCleaningLambdaPermission
       - NotificationConfigLambda
     Properties:
