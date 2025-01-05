@@ -148,28 +148,43 @@ Resources:
                   prefix = event['ResourceProperties']['Prefix']
                   event_type = event['ResourceProperties']['Event']
 
-                  if request_type == 'Create' or request_type == 'Update':
+                  if request_type in ['Create', 'Update']:
                       print("Handling Create or Update event")
                       try:
+                          # Fetch existing notification configuration
+                          existing_config = s3.get_bucket_notification_configuration(Bucket=bucket_name)
+
+                          # Remove unsupported keys like ResponseMetadata
+                          existing_config.pop('ResponseMetadata', None)
+
+                          # Get existing Lambda configurations or initialize an empty list
+                          lambda_configs = existing_config.get('LambdaFunctionConfigurations', [])
+
+                          # Prepare new Lambda configuration
+                          new_lambda_config = {
+                              'LambdaFunctionArn': function_arn,
+                              'Events': [event_type],
+                              'Filter': {
+                                  'Key': {
+                                      'FilterRules': [
+                                          {'Name': 'prefix', 'Value': prefix}
+                                      ]
+                                  }
+                              }
+                          }
+
+                          # Check if the function is already configured to avoid duplicates
+                          if new_lambda_config not in lambda_configs:
+                              lambda_configs.append(new_lambda_config)
+
+                          # Update the notification configuration
                           s3.put_bucket_notification_configuration(
                               Bucket=bucket_name,
                               NotificationConfiguration={
-                                  'LambdaFunctionConfigurations': [
-                                      {
-                                          'LambdaFunctionArn': function_arn,
-                                          'Events': [event_type],
-                                          'Filter': {
-                                              'Key': {
-                                                  'FilterRules': [
-                                                      {'Name': 'prefix', 'Value': prefix}
-                                                  ]
-                                              }
-                                          }
-                                      }
-                                  ]
+                                  'LambdaFunctionConfigurations': lambda_configs
                               }
                           )
-                          print("Notification configuration set successfully")
+                          print("Notification configuration updated successfully")
                           cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
                       except Exception as e:
                           print(f"Error during Create/Update: {e}")
@@ -178,11 +193,27 @@ Resources:
                   elif request_type == 'Delete':
                       print("Handling Delete event")
                       try:
+                          # Fetch existing notification configuration
+                          existing_config = s3.get_bucket_notification_configuration(Bucket=bucket_name)
+
+                          # Remove unsupported keys like ResponseMetadata
+                          existing_config.pop('ResponseMetadata', None)
+
+                          # Get existing Lambda configurations
+                          lambda_configs = existing_config.get('LambdaFunctionConfigurations', [])
+
+                          # Remove the Lambda function configuration that matches the function ARN
+                          lambda_configs = [config for config in lambda_configs if config['LambdaFunctionArn'] != function_arn]
+
+                          # Update the notification configuration
                           s3.put_bucket_notification_configuration(
                               Bucket=bucket_name,
-                              NotificationConfiguration={}
+                              NotificationConfiguration={
+                                  'LambdaFunctionConfigurations': lambda_configs
+                              }
                           )
-                          print("Notification configuration removed successfully")
+                          print("Notification configuration updated successfully after deletion")
+                          cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
                       except s3.exceptions.NoSuchBucket:
                           print("Bucket does not exist; skipping notification cleanup.")
                           cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
@@ -192,11 +223,10 @@ Resources:
                           cfnresponse.send(event, context, cfnresponse.SUCCESS, {"Error": str(e)})
                           return
 
-                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
-
               except Exception as e:
                   print(f"Unhandled error: {e}")
                   cfnresponse.send(event, context, cfnresponse.FAILED, {"UnhandledError": str(e)})
+
 
       Timeout: 60
       MemorySize: 128
