@@ -24,6 +24,9 @@ Resources:
       TemplateURL: !Sub "https://s3.amazonaws.com/${BucketName}/template/s3.template.yml"
       Parameters:
         BucketName: !Ref BucketName
+        RawFilesPrefix: !Ref RawFilesPrefix
+        ProcessedFilesPrefix: !Ref ProcessedFilesPrefix
+
 
   TextractPipelineStack:
     Type: AWS::CloudFormation::Stack

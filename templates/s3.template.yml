@@ -6,20 +6,28 @@ Parameters:
     Type: String
     Description: "The name of the pre-existing S3 bucket"
 
+  RawFilesPrefix:
+    Type: String
+    Description: "Prefix of the folder where raw files are stored"
+
+  ProcessedFilesPrefix:
+    Type: String
+    Description: "Prefix of the folder where processed files are stored"
+
 Resources:
   S3RawFilesFolder:
     Type: Custom::S3Folder
     Properties:
       ServiceToken: !GetAtt S3FolderLambda.Arn
       BucketName: !Ref BucketName
-      Folder: "summarization-raw-files/"
+      Folder: !Ref RawFilesPrefix
 
   S3ProcessedFilesFolder:
     Type: Custom::S3Folder
     Properties:
       ServiceToken: !GetAtt S3FolderLambda.Arn
       BucketName: !Ref BucketName
-      Folder: "summarization-to-be-processed-files/"
+      Folder: !Ref ProcessedFilesPrefix
 
   S3TemplateFolder:
     Type: Custom::S3Folder
