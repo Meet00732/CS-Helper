@@ -290,7 +290,7 @@ Resources:
       ServiceToken: !GetAtt NotificationConfigLambda.Arn
       BucketName: !Ref BucketName
       FunctionArn: !GetAtt TextCleaningLambda.Arn
-      Prefix: !Ref ProcessedFilesPrefix
+      Prefix: !Ref ToBeProcessedFilesPrefix
       Event: "s3:ObjectCreated:*"
 
 Outputs:
