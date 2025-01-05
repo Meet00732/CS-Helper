@@ -19,7 +19,7 @@ Resources:
     Properties:
       ServiceToken: !GetAtt S3FolderLambda.Arn
       BucketName: !Ref BucketName
-      Folder: "summarization-processed-files/"
+      Folder: "summarization-to-be-processed-files/"
 
   S3TemplateFolder:
     Type: Custom::S3Folder

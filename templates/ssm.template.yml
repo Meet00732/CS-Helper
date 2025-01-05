@@ -14,7 +14,7 @@ Parameters:
 
   ProcessedFilesPrefix:
     Type: String
-    Default: "summarization-processed-files/"
+    Default: "summarization-to-be-processed-files/"
     Description: "Prefix of the folder where processed files are stored"
 
 
