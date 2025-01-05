@@ -14,8 +14,13 @@ Parameters:
 
   ToBeProcessedFilesPrefix:
     Type: AWS::SSM::Parameter::Value<String>
-    Description: "Prefix of the folder where processed files are stored"
+    Description: "Prefix of the folder where to be processed files are stored"
     Default: ToBeProcessedFilesPrefix
+
+  ProcessedFilesPrefix:
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: "Prefix of the folder where processed files are stored"
+    Default: ProcessedFilesPrefix
 
 Resources:
   S3BucketStack:
@@ -26,6 +31,7 @@ Resources:
         BucketName: !Ref BucketName
         RawFilesPrefix: !Ref RawFilesPrefix
         ToBeProcessedFilesPrefix: !Ref ToBeProcessedFilesPrefix
+        ProcessedFilesPrefix: !Ref ProcessedFilesPrefix
 
 
   TextractPipelineStack:
