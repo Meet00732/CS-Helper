@@ -44,6 +44,7 @@ Resources:
                 Resource:
                   - !Sub "arn:aws:s3:::${BucketName}/${RawFilesPrefix}*"
                   - !Sub "arn:aws:s3:::${BucketName}/${ToBeProcessedFilesPrefix}*"
+                  - !Sub "arn:aws:s3:::${BucketName}/${ProcessedFilesPrefix}*"
 
               # Permissions for Textract
               - Effect: Allow
@@ -97,12 +98,12 @@ Resources:
   # Text Cleaning Lambda
   TextCleaningLambda:
     Type: AWS::Lambda::Function
-    DependsOn: LambdaExecutionRole
+    DependsOn: TextractLambdaRole
     Properties:
       FunctionName: "TextCleaningLambda"
       Runtime: python3.8
       Handler: text_cleaning_lambda.handler
-      Role: !GetAtt LambdaExecutionRole.Arn
+      Role: !GetAtt TextractLambdaRole.Arn
       Code:
         S3Bucket: !Ref BucketName
         S3Key: "textract_lambda.zip"
