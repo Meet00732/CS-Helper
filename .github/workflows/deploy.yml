@@ -21,19 +21,22 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
+    - name: Install System-Level Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3-pip python3-venv python3-dev build-essential
+
     - name: Install Python Dependencies
       run: |
         python3 -m venv .venv
         source .venv/bin/activate
-        pip install --upgrade pip
+        pip install --upgrade pip setuptools wheel
         pip install --target=lambda_dependencies -r lambda/requirements.txt
 
     - name: Package Lambda Function
       run: |
         # Streamlined packaging of dependencies and code
         cd lambda_dependencies
-        find . -name "*.pyc" -delete  # Remove compiled Python files
-        find . -name "__pycache__" -delete  # Remove cache files
         zip -r ../textract_lambda.zip ./*
         cd ../lambda
         zip -g ../textract_lambda.zip ./*
