@@ -258,6 +258,10 @@ Resources:
                   - "logs:CreateLogStream"
                   - "logs:PutLogEvents"
                 Resource: "arn:aws:logs:*:*:*"
+              - Effect: Allow
+                Action:
+                  - "s3:GetBucketNotification"
+                Resource: !Sub "arn:aws:s3:::${BucketName}"
 
   # S3 Trigger for TextractLambda
   S3NotificationCustomResourceForTextract:
