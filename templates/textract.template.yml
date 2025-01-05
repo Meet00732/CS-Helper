@@ -243,7 +243,10 @@ Resources:
   # S3 Trigger for TextCleaningLambda
   S3NotificationCustomResourceForTextCleaning:
     Type: Custom::S3Notification
-    DependsOn: TextCleaningLambdaPermission
+    DependsOn: 
+      - TextCleaningLambdaPermission
+      - NotificationConfigLambda
+      - S3NotificationCustomResourceForTextract
     Properties:
       ServiceToken: !GetAtt NotificationConfigLambda.Arn
       BucketName: !Ref BucketName
