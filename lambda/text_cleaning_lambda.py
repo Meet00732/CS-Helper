@@ -5,6 +5,8 @@ import unicodedata
 from bs4 import BeautifulSoup
 import contractions
 from nltk.corpus import stopwords
+from configuration import configuration
+
 
 # Initialize s3 client and spacy model
 s3 = boto3.client('s3')
@@ -104,7 +106,7 @@ def lambda_handler(event, context):
     annotated_text = data_cleaning_pipeline(raw_text)
 
     # Save the processed text to correct s3.
-    destination_folder = "cleaned_folder/"
+    destination_folder = configuration.get_parameter("ProcessedFilesPrefix")
     file_name = key.split("/")[-1]
     annotated_key = f"{destination_folder}{file_name.replace(".txt", "_cleaned_annotated.txt")}"
 
