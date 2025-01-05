@@ -26,13 +26,14 @@ jobs:
         python3 -m venv .venv
         source .venv/bin/activate
         pip install --upgrade pip
-        mkdir -p lambda_dependencies
         pip install --target=lambda_dependencies -r lambda/requirements.txt
 
     - name: Package Lambda Function
       run: |
-        # Ensure dependencies and Lambda code are packaged together
+        # Streamlined packaging of dependencies and code
         cd lambda_dependencies
+        find . -name "*.pyc" -delete  # Remove compiled Python files
+        find . -name "__pycache__" -delete  # Remove cache files
         zip -r ../textract_lambda.zip ./*
         cd ../lambda
         zip -g ../textract_lambda.zip ./*

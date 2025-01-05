@@ -82,7 +82,7 @@ Resources:
         S3Bucket: !Ref BucketName
         S3Key: "textract_lambda.zip"
       Timeout: 120
-      MemorySize: 512
+      MemorySize: 1024
 
   # Lambda Permission for S3 Invocation
   TextractLambdaPermission:
@@ -108,7 +108,7 @@ Resources:
         S3Bucket: !Ref BucketName
         S3Key: "textract_lambda.zip"
       Timeout: 120
-      MemorySize: 512
+      MemorySize: 1024
 
   # Lambda Permission for TextCleaningLambda
   TextCleaningLambdaPermission:
