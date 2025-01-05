@@ -74,7 +74,7 @@ Resources:
     Type: AWS::Lambda::Function
     DependsOn: TextractLambdaRole
     Properties:
-      FunctionName: "TextractProcessingLambda"
+      FunctionName: "TextractLambda"
       Runtime: python3.8
       Handler: textract_lambda.handler
       Role: !GetAtt TextractLambdaRole.Arn
@@ -229,14 +229,14 @@ Resources:
                   - "logs:PutLogEvents"
                 Resource: "arn:aws:logs:*:*:*"
 
-  # S3 Trigger for TextractProcessingLambda
+  # S3 Trigger for TextractLambda
   S3NotificationCustomResourceForTextract:
     Type: Custom::S3Notification
-    DependsOn: TextractProcessingLambdaPermission
+    DependsOn: TextractLambdaPermission
     Properties:
       ServiceToken: !GetAtt NotificationConfigLambda.Arn
       BucketName: !Ref BucketName
-      FunctionArn: !GetAtt TextractProcessingLambda.Arn
+      FunctionArn: !GetAtt TextractLambda.Arn
       Prefix: !Ref RawFilesPrefix
       Event: "s3:ObjectCreated:*"
 
@@ -254,7 +254,7 @@ Resources:
 Outputs:
   TextractLambdaFunctionName:
     Description: "Name of the Textract Processing Lambda function"
-    Value: !Ref TextractProcessingLambda
+    Value: !Ref TextractLambda
 
   TextCleaningLambdaFunctionName:
     Description: "Name of the Text Cleaning Lambda function"
