@@ -26,20 +26,19 @@ jobs:
         python3 -m venv .venv
         source .venv/bin/activate
         pip install --upgrade pip
-        pip install -r requirements.txt
+        pip install -r lambda/requirements.txt
         mkdir -p lambda_dependencies
-        pip install --target=lambda_dependencies -r requirements.txt
-
+        pip install --target=lambda_dependencies -r lambda/requirements.txt
 
     - name: Package Lambda Function
       run: |
+        # Ensure dependencies and Lambda code are packaged together
         cd lambda_dependencies
         zip -r ../textract_lambda.zip ./*
         cd ../lambda
-        zip -r ../textract_lambda.zip ./*
+        zip -g ../textract_lambda.zip ./*
         mv ../textract_lambda.zip ../scripts/
         cd ..
-
 
     - name: Deploy SSM Stack
       run: |
@@ -47,9 +46,8 @@ jobs:
           --template-file templates/ssm.template.yml \
           --stack-name SSMParameterStack \
           --capabilities CAPABILITY_NAMED_IAM
-          
 
-    - name: Upload YAML templates to S3
+    - name: Upload YAML templates and Lambda package to S3
       run: |
         aws s3 cp scripts/textract_lambda.zip s3://cs-helper/textract_lambda.zip
         aws s3 cp templates/s3.template.yml s3://cs-helper/template/
