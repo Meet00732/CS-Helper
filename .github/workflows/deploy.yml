@@ -21,11 +21,6 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
-    - name: Install System-Level Dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y python3-pip python3-venv python3-dev build-essential
-
     - name: Install Python Dependencies
       run: |
         python3 -m venv .venv

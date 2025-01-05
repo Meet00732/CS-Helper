@@ -1,5 +1,5 @@
 boto3==1.26.161
 spacy==3.5.0
-bs4==0.0.1
+beautifulsoup4==4.12.3
 contractions==0.1.73
 nltk==3.8.1
