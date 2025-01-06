@@ -21,7 +21,7 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
-        - name: Build Lambda Package in Docker
+    - name: Build Lambda Package in Docker
       run: |
         docker pull python:3.8
         docker run --rm -v "$(pwd)":/app -w /app python:3.8 bash -c "
