@@ -69,10 +69,25 @@ Resources:
                   - "logs:PutLogEvents"
                 Resource: "arn:aws:logs:*:*:*"
 
+  # Lambda Layer for Dependencies
+  LambdaDependenciesLayer:
+    Type: AWS::Lambda::LayerVersion
+    DependsOn: TextractLambdaRole
+    Properties:
+      LayerName: "LambdaDependenciesLayer"
+      Description: "Shared dependencies for Lambda functions"
+      Content:
+        S3Bucket: !Ref BucketName
+        S3Key: "lambda_layer.zip"  # Ensure the zip file with dependencies is uploaded to S3
+      CompatibleRuntimes:
+        - python3.10
+
   # Textract Lambda Function
   TextractLambda:
     Type: AWS::Lambda::Function
-    DependsOn: TextractLambdaRole
+    DependsOn: 
+      - TextractLambdaRole
+      - LambdaDependenciesLayer
     Properties:
       FunctionName: "TextractLambda"
       Runtime: python3.10
@@ -83,6 +98,8 @@ Resources:
         S3Key: "textract_lambda.zip"
       Timeout: 120
       MemorySize: 1024
+      Layers:
+        - !Ref LambdaDependenciesLayer
 
   # Lambda Permission for S3 Invocation
   TextractLambdaPermission:
@@ -98,7 +115,9 @@ Resources:
   # Text Cleaning Lambda
   TextCleaningLambda:
     Type: AWS::Lambda::Function
-    DependsOn: TextractLambdaRole
+    DependsOn: 
+      - TextractLambdaRole
+      - LambdaDependenciesLayer
     Properties:
       FunctionName: "TextCleaningLambda"
       Runtime: python3.10
@@ -109,6 +128,8 @@ Resources:
         S3Key: "textract_lambda.zip"
       Timeout: 120
       MemorySize: 1024
+      Layers:
+        - !Ref LambdaDependenciesLayer
 
   # Lambda Permission for TextCleaningLambda
   TextCleaningLambdaPermission:
@@ -119,7 +140,6 @@ Resources:
       Action: lambda:InvokeFunction
       Principal: s3.amazonaws.com
       SourceArn: !Sub "arn:aws:s3:::${BucketName}"
-
 
 
   # Lambda to Configure Notifications

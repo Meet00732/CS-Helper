@@ -21,22 +21,22 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
-    - name: Install Python Dependencies
-      run: |
-        python3 -m venv .venv
-        source .venv/bin/activate
-        pip install --upgrade pip
-        pip install --target=lambda_dependencies -r lambda/requirements.txt
-
     - name: Package Lambda Function
       run: |
-        # Streamlined packaging of dependencies and code
-        cd lambda_dependencies
+        # Package Lambda code only, without dependencies
+        cd lambda
         zip -r ../textract_lambda.zip ./*
-        cd ../lambda
-        zip -g ../textract_lambda.zip ./*
         mv ../textract_lambda.zip ../scripts/
         cd ..
+
+    - name: Create Lambda Layer
+      run: |
+        mkdir -p layer/python
+        pip install -r lambda/requirements.txt -t layer/python/
+        cd layer
+        zip -r ../lambda_layer.zip .
+        cd ..
+        aws s3 cp lambda_layer.zip s3://cs-helper/lambda_layer.zip
 
     - name: Deploy SSM Stack
       run: |
