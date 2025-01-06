@@ -52,7 +52,6 @@ jobs:
         zip -r9 ../scripts/dependency_layer.zip ./*
         cd ..
 
-
     - name: Deploy SSM Stack
       run: |
         aws cloudformation deploy \
@@ -63,7 +62,7 @@ jobs:
     - name: Upload YAML templates and Lambda package to S3
       run: |
         aws s3 cp scripts/textract_lambda.zip s3://cs-helper/textract_lambda.zip
-        aws s3 cp scripts/regex_layer.zip s3://cs-helper/layers/regex_layer.zip
+        aws s3 cp scripts/dependency_layer.zip s3://cs-helper/layers/dependency_layer.zip
         aws s3 cp templates/s3.template.yml s3://cs-helper/template/
         aws s3 cp templates/ssm.template.yml s3://cs-helper/template/
         aws s3 cp templates/textract.template.yml s3://cs-helper/template/
