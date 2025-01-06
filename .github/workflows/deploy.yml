@@ -23,23 +23,22 @@ jobs:
 
     - name: Build Lambda Package in Docker
       run: |
-        # Pull the Python 3.8 Docker image (or the version matching your Lambda runtime)
         docker pull python:3.8
-
-        # Run the Docker container with the current directory mounted
         docker run --rm -v "$(pwd)":/app -w /app python:3.8 bash -c "
-          # Update package manager and install zip utility
           apt-get update && apt-get install -y zip
-
-          # Create deployment directories
           mkdir -p scripts lambda/build dependency_layer/python nltk_data
 
           # Download NLTK resources
           python3 -m pip install --upgrade pip
           python3 -m nltk.downloader -d nltk_data punkt stopwords wordnet
 
+          # Verify NLTK resources
+          ls -l nltk_data
+          ls -l nltk_data/corpora
+          ls -l nltk_data/tokenizers
+
           # Copy Lambda handler files to the build directory
-          cp lambda/textract_lambda.py lambda/text_cleaning_lambda.py lambda/configuration.py lambda/__init__.py lambda/build/
+          cp lambda/text_cleaning_lambda.py lambda/textract_lambda.py lambda/configuration.py lambda/__init__.py lambda/build/
           cp -r nltk_data lambda/build/  # Include NLTK data
 
           # Install dependencies for the Lambda function
@@ -48,15 +47,8 @@ jobs:
           # Package the Lambda function
           cd lambda/build
           zip -r ../../scripts/textract_lambda.zip ./*
-          cd /app
-
-          # Install dependencies for the Lambda layer
-          pip install -r lambda/requirements.txt -t dependency_layer/python/
-
-          # Package the Lambda layer
-          cd dependency_layer
-          zip -r ../scripts/dependency_layer.zip ./*
         "
+
 
     - name: Deploy SSM Stack
       run: |
