@@ -69,7 +69,7 @@ Resources:
                   - "logs:PutLogEvents"
                 Resource: "arn:aws:logs:*:*:*"
 
-  # Lambda Layer for Dependencies
+  # Lambda Layer for General Dependencies
   LambdaDependenciesLayer:
     Type: AWS::Lambda::LayerVersion
     DependsOn: TextractLambdaRole
@@ -78,9 +78,22 @@ Resources:
       Description: "Shared dependencies for Lambda functions"
       Content:
         S3Bucket: !Ref BucketName
-        S3Key: "lambda_layer.zip"  # Ensure the zip file with dependencies is uploaded to S3
+        S3Key: "general_lambda_layer.zip"  # General dependencies zip file
       CompatibleRuntimes:
         - python3.10
+
+  # Lambda Layer for Spacy
+  LambdaSpacyLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      LayerName: "LambdaSpacyLayer"
+      Description: "Spacy library for Text Cleaning Lambda"
+      Content:
+        S3Bucket: !Ref BucketName
+        S3Key: "spacy_lambda_layer.zip"  # Spacy-specific zip file
+      CompatibleRuntimes:
+        - python3.10
+
 
   # Textract Lambda Function
   TextractLambda:
@@ -118,6 +131,7 @@ Resources:
     DependsOn: 
       - TextractLambdaRole
       - LambdaDependenciesLayer
+      - LambdaSpacyLayer
     Properties:
       FunctionName: "TextCleaningLambda"
       Runtime: python3.10
@@ -130,6 +144,7 @@ Resources:
       MemorySize: 1024
       Layers:
         - !Ref LambdaDependenciesLayer
+        - !Ref LambdaSpacyLayer
 
   # Lambda Permission for TextCleaningLambda
   TextCleaningLambdaPermission:

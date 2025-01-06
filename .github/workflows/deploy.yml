@@ -25,18 +25,27 @@ jobs:
       run: |
         # Package Lambda code only, without dependencies
         cd lambda
-        zip -r ../textract_lambda.zip ./*
+        zip -r9 ../textract_lambda.zip ./*
         mv ../textract_lambda.zip ../scripts/
         cd ..
 
-    - name: Create Lambda Layer
+    - name: Create Lambda Layer for Spacy
       run: |
         mkdir -p layer/python
-        pip install -r lambda/requirements.txt -t layer/python/
+        pip install spacy==3.5.0 -t layer/python/  # Adjust version as needed
         cd layer
-        zip -r ../lambda_layer.zip .
+        zip -r9 ../spacy_lambda_layer.zip ./*
         cd ..
-        aws s3 cp lambda_layer.zip s3://cs-helper/lambda_layer.zip
+        aws s3 cp spacy_lambda_layer.zip s3://cs-helper/spacy_lambda_layer.zip
+
+    - name: Create Lambda Layer for General Dependencies
+      run: |
+        mkdir -p layer/python
+        pip install -r lambda/requirements.txt --exclude spacy -t layer/python/
+        cd layer
+        zip -r9 ../general_lambda_layer.zip ./*
+        cd ..
+        aws s3 cp general_lambda_layer.zip s3://cs-helper/general_lambda_layer.zip
 
     - name: Deploy SSM Stack
       run: |
