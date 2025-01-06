@@ -75,7 +75,7 @@ Resources:
     Type: AWS::Lambda::Function
     DependsOn: 
       - TextractLambdaRole
-      - RegexLayer
+      - DependencyLayer
     Properties:
       FunctionName: "TextractLambda"
       Runtime: python3.10
@@ -87,7 +87,7 @@ Resources:
       Timeout: 120
       MemorySize: 1024
       Layers:
-        - !Ref RegexLayer
+        - !Ref DependencyLayer
 
   # Lambda Permission for S3 Invocation
   TextractLambdaPermission:
@@ -105,7 +105,7 @@ Resources:
     Type: AWS::Lambda::Function
     DependsOn: 
       - TextractLambdaRole
-      - RegexLayer
+      - DependencyLayer
     Properties:
       FunctionName: "TextCleaningLambda"
       Runtime: python3.10
@@ -117,18 +117,18 @@ Resources:
       Timeout: 120
       MemorySize: 1024
       Layers:
-        - !Ref RegexLayer
+        - !Ref DependencyLayer
 
   
   # Lambda Layer for Regex
-  RegexLayer:
+  DependencyLayer:
     Type: AWS::Lambda::LayerVersion
     Properties:
-      LayerName: "RegexLayer"
-      Description: "Lambda Layer for regex dependency"
+      LayerName: "DependencyLayer"
+      Description: "Lambda Layer for all dependencies"
       Content:
         S3Bucket: !Ref BucketName
-        S3Key: "layers/regex_layer.zip"
+        S3Key: "layers/dependency_layer.zip"
       CompatibleRuntimes:
         - python3.10
 
