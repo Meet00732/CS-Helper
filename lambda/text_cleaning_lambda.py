@@ -2,7 +2,6 @@ import boto3
 import re
 import unicodedata
 from bs4 import BeautifulSoup
-import contractions
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
@@ -36,11 +35,6 @@ def standardize_accented_chars(text):
 def remove_urls(text):
     """Removes URLs from the text."""
     return re.sub(r"https?://\S+|www\.\S+", "", text)
-
-def expand_contractions(text):
-    """Expand contractions (e.g don't -> do not)."""
-    expanded_words = [contractions.fix(word) for word in text.split()]
-    return " ".join(expanded_words)
 
 def remove_special_characters(text):
     """Removes special characters from the text."""
@@ -78,7 +72,6 @@ def data_cleaning_pipeline(raw_text):
     cleaned_text = to_lowercase(cleaned_text)
     cleaned_text = standardize_accented_chars(cleaned_text)
     cleaned_text = remove_urls(cleaned_text)
-    cleaned_text = expand_contractions(cleaned_text)
     cleaned_text = remove_special_characters(cleaned_text)
     cleaned_text = remove_punctuation(cleaned_text)
     cleaned_text = lemmatization(cleaned_text)
