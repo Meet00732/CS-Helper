@@ -1,75 +1,73 @@
 import boto3
-import spacy
 import re
 import unicodedata
 from bs4 import BeautifulSoup
 import contractions
 from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer
+from textblob import TextBlob
 from configuration import configuration
 
-
-# Initialize s3 client and spacy model
+# Initialize s3 client
 s3 = boto3.client('s3')
-nlp = spacy.load("en_core_web_sm")
-stop_words = set(stopwords.words("english"))
 
+# Download required NLTK resources
+import nltk
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('wordnet')
+
+stop_words = set(stopwords.words("english"))
+lemmatizer = WordNetLemmatizer()
 
 def remove_html_tags(text):
     """Remove HTML tags from text."""
     return BeautifulSoup(text, "html.parser").get_text()
 
-
 def to_lowercase(text):
     """Convert text to lowercase."""
     return text.lower()
 
-
 def standardize_accented_chars(text):
-    """Convert accented characters to standard ASCII charcters."""
+    """Convert accented characters to standard ASCII characters."""
     return unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("utf-8", "ignore")
-
 
 def remove_urls(text):
     """Removes URLs from the text."""
     return re.sub(r"https?://\S+|www\.\S+", "", text)
 
-
 def expand_contractions(text):
-    """Expand contractions (e.g don't -> do not)"""
+    """Expand contractions (e.g don't -> do not)."""
     expanded_words = [contractions.fix(word) for word in text.split()]
     return " ".join(expanded_words)
-
 
 def remove_special_characters(text):
     """Removes special characters from the text."""
     pattern = r"[^a-zA-Z0-9.,!?/:;\"\'\s]"
     return re.sub(pattern, "", text)
 
-
 def remove_punctuation(text):
     """Removes punctuations from the text."""
     return "".join([c for c in text if c not in re.escape("!#$%&'()*+,-./:;<=>?@[\\]^_`{|}~")])
 
-
 def lemmatization(text):
     """Perform lemmatization to extract base forms of the words."""
-    doc = nlp(text)
-    return " ".join([token.lemma_ for token in doc])
+    words = word_tokenize(text)
+    return " ".join([lemmatizer.lemmatize(word) for word in words])
 
 def remove_stopwords(text):
     """Removes stop words from the text."""
-    doc = nlp(text)
-    return " ".join([token.text for token in doc if not token.is_stop])
-
+    words = word_tokenize(text)
+    return " ".join([word for word in words if word.lower() not in stop_words])
 
 def annotate_entities(text):
     """Annotate text with named entity tags."""
-    doc = nlp(text)
+    blob = TextBlob(text)
     annotated_text = text
-    for ent in doc.ents:
-        annotated_text = annotated_text.replace(ent.text, f"[{ent.label_}] {ent.text}")
+    for noun_phrase in blob.noun_phrases:
+        annotated_text = annotated_text.replace(noun_phrase, f"[ENTITY] {noun_phrase}")
     return annotated_text
-
 
 #### Pipeline to perform NLP tasks.
 def data_cleaning_pipeline(raw_text):
@@ -87,7 +85,6 @@ def data_cleaning_pipeline(raw_text):
     cleaned_text = remove_stopwords(cleaned_text)
     return annotate_entities(cleaned_text)
 
-
 # Lambda handler
 def lambda_handler(event, context):
     """
@@ -99,7 +96,7 @@ def lambda_handler(event, context):
     key = event["Records"][0]["s3"]["object"]["key"]
 
     # Getting file from s3.
-    response = s3.get_object(Bucket=bucket_name, key=key)
+    response = s3.get_object(Bucket=bucket_name, Key=key)
     raw_text = response["Body"].read().decode("utf-8")
 
     # Process text
@@ -116,4 +113,3 @@ def lambda_handler(event, context):
         "statusCode": 200,
         "body": f"File processed successfully. Annotated text saved as {annotated_key}."
     }
-
