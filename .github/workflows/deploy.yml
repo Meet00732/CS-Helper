@@ -21,18 +21,19 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
-    - name: Create Regex Lambda Layer
+    - name: Create Dependency Lambda Layer
       run: |
         # Prepare a directory for the Lambda layer
-        mkdir -p regex_layer/python
+        mkdir -p dependency_layer/python
 
-        # Install regex into the Lambda layer directory
-        pip install -r requirements.txt -t ./
+        # Install all dependencies from requirements.txt into the Lambda layer directory
+        pip install -r requirements.txt -t dependency_layer/python/
 
         # Package the Lambda layer
-        cd regex_layer
-        zip -r9 ../scripts/regex_layer.zip ./*
+        cd dependency_layer
+        zip -r9 ../scripts/dependency_layer.zip ./*
         cd ..
+
 
     - name: Deploy SSM Stack
       run: |
