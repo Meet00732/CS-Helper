@@ -84,7 +84,7 @@ def data_cleaning_pipeline(raw_text):
     return annotate_entities(cleaned_text)
 
 # Lambda handler
-def lambda_handler(event, context):
+def handler(event, context):
     try:
         # Extract S3 bucket and file details
         bucket_name = event["Records"][0]["s3"]["bucket"]["name"]
