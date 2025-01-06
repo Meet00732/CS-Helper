@@ -35,7 +35,7 @@ jobs:
           python3 -m pip install nltk==3.9.1
 
           # Download NLTK resources
-          python3 -m nltk.downloader -d nltk_data punkt stopwords wordnet
+          python3 -m nltk.downloader -d nltk_data punkt_tab stopwords wordnet
 
           # Verify NLTK resources
           ls -l nltk_data
