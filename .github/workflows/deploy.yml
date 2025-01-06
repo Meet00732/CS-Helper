@@ -29,23 +29,48 @@ jobs:
         mv ../textract_lambda.zip ../scripts/
         cd ..
 
+    
     - name: Create Lambda Layer for Spacy
       run: |
         mkdir -p layer/python
-        pip install spacy==3.8.3 -t layer/python/  # Adjust version as needed
+        pip install --no-deps spacy==3.8.3 -t layer/python/
+        pip install preshed blis murmurhash cymem thinc numpy -t layer/python/
+        python3 -m spacy download en_core_web_sm
+        cp -r $(python3 -c "import en_core_web_sm; print(en_core_web_sm.__path__[0])") layer/python/en_core_web_sm
+
+        # Remove unnecessary files
+        find layer/python -name "__pycache__" -type d -exec rm -r {} +
+        find layer/python -name "*.dist-info" -type d -exec rm -r {} +
+        find layer/python -name "tests" -type d -exec rm -r {} +
+
+        # Create the layer package
         cd layer
         zip -r9 ../spacy_lambda_layer.zip ./*
         cd ..
         aws s3 cp spacy_lambda_layer.zip s3://cs-helper/spacy_lambda_layer.zip
 
+        # Clean up
+        rm -rf layer spacy_lambda_layer.zip
+
+
+
     - name: Create Lambda Layer for General Dependencies
       run: |
         mkdir -p layer/python
-        pip install -r lambda/requirements.txt --exclude spacy -t layer/python/
+        pip install -r lambda/requirements.txt -t layer/python/
+        
+        # Remove unnecessary files
+        find layer/python -name "__pycache__" -type d -exec rm -r {} +
+        find layer/python -name "*.dist-info" -type d -exec rm -r {} +
+        find layer/python -name "tests" -type d -exec rm -r {} +
+
         cd layer
         zip -r9 ../general_lambda_layer.zip ./*
         cd ..
         aws s3 cp general_lambda_layer.zip s3://cs-helper/general_lambda_layer.zip
+
+        # Clean up
+        rm -rf layer general_lambda_layer.zip
 
     - name: Deploy SSM Stack
       run: |
