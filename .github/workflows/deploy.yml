@@ -21,15 +21,20 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
-    - name: Build Lambda Package in Docker
+        - name: Build Lambda Package in Docker
       run: |
         docker pull python:3.8
         docker run --rm -v "$(pwd)":/app -w /app python:3.8 bash -c "
           apt-get update && apt-get install -y zip
+
+          # Create deployment directories
           mkdir -p scripts lambda/build dependency_layer/python nltk_data
 
-          # Download NLTK resources
+          # Install NLTK temporarily to download resources
           python3 -m pip install --upgrade pip
+          python3 -m pip install nltk==3.9.1
+
+          # Download NLTK resources
           python3 -m nltk.downloader -d nltk_data punkt stopwords wordnet
 
           # Verify NLTK resources
@@ -47,7 +52,16 @@ jobs:
           # Package the Lambda function
           cd lambda/build
           zip -r ../../scripts/textract_lambda.zip ./*
+          cd /app
+
+          # Install dependencies for the Lambda layer
+          pip install -r lambda/requirements.txt -t dependency_layer/python/
+
+          # Package the Lambda layer
+          cd dependency_layer
+          zip -r ../scripts/dependency_layer.zip ./*
         "
+
 
 
     - name: Deploy SSM Stack
