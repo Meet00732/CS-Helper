@@ -34,16 +34,19 @@ jobs:
           # Create deployment directories
           mkdir -p scripts lambda/build dependency_layer/python
 
+          # Copy Lambda handler files to the build directory
+          cp lambda/textract_lambda.py lambda/text_cleaning_lambda.py lambda/configuration.py lambda/__init__.py lambda/build/
+
           # Install dependencies for the Lambda function
           pip install -r lambda/requirements.txt -t lambda/build/
-
-          # Install dependencies for the Lambda layer
-          pip install -r lambda/requirements.txt -t dependency_layer/python/
 
           # Package the Lambda function
           cd lambda/build
           zip -r ../../scripts/textract_lambda.zip ./*
           cd /app
+
+          # Install dependencies for the Lambda layer
+          pip install -r lambda/requirements.txt -t dependency_layer/python/
 
           # Package the Lambda layer
           cd dependency_layer
