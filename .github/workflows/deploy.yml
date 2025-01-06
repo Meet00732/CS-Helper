@@ -23,30 +23,34 @@ jobs:
 
     - name: Build Lambda Package in Docker
       run: |
-        # Pull the Python 3.8 Docker image (or the version matching your Lambda runtime)
-        docker pull python:3.8
+        # Pull the Amazon Linux 2 Docker image
+        docker pull amazonlinux:2
 
         # Run the Docker container with the current directory mounted
-        docker run --rm -v "$(pwd)":/app -w /app python:3.8 bash -c "
-          # Update package manager and install zip utility
-          apt-get update && apt-get install -y zip
+        docker run --rm -v "$(pwd)":/app -w /app amazonlinux:2 bash -c "
+          # Install necessary tools and Python 3.10
+          yum install -y gcc python3.10 python3.10-devel zip
+
+          # Ensure pip is installed and up-to-date
+          python3.10 -m ensurepip
+          python3.10 -m pip install --upgrade pip
 
           # Create deployment directories
           mkdir -p scripts lambda/build dependency_layer/python
 
           # Copy Lambda handler files to the build directory
-          cp lambda/textract_lambda.py lambda/text_cleaning_lambda.py lambda/configuration.py lambda/__init__.py lambda/build/
+          cp lambda/text_cleaning_lambda.py lambda/configuration.py lambda/__init__.py lambda/build/
 
           # Install dependencies for the Lambda function
-          pip install -r lambda/requirements.txt -t lambda/build/
+          python3.10 -m pip install -r lambda/requirements.txt -t lambda/build/
+
+          # Install dependencies for the Lambda layer
+          python3.10 -m pip install -r lambda/requirements.txt -t dependency_layer/python/
 
           # Package the Lambda function
           cd lambda/build
           zip -r ../../scripts/textract_lambda.zip ./*
           cd /app
-
-          # Install dependencies for the Lambda layer
-          pip install -r lambda/requirements.txt -t dependency_layer/python/
 
           # Package the Lambda layer
           cd dependency_layer
