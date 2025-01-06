@@ -102,7 +102,6 @@ Resources:
     Type: AWS::Lambda::Function
     DependsOn: 
       - TextractLambdaRole
-      - LambdaDependenciesLayer
     Properties:
       FunctionName: "TextCleaningLambda"
       Runtime: python3.10
