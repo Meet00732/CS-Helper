@@ -78,7 +78,7 @@ Resources:
       - RegexLayer
     Properties:
       FunctionName: "TextractLambda"
-      Runtime: python3.8
+      Runtime: python3.10
       Handler: textract_lambda.handler
       Role: !GetAtt TextractLambdaRole.Arn
       Code:
@@ -108,7 +108,7 @@ Resources:
       - RegexLayer
     Properties:
       FunctionName: "TextCleaningLambda"
-      Runtime: python3.8
+      Runtime: python3.10
       Handler: text_cleaning_lambda.handler
       Role: !GetAtt TextractLambdaRole.Arn
       Code:
@@ -130,7 +130,7 @@ Resources:
         S3Bucket: !Ref BucketName
         S3Key: "layers/regex_layer.zip"
       CompatibleRuntimes:
-        - python3.8
+        - python3.10
 
   # Lambda Permission for TextCleaningLambda
   TextCleaningLambdaPermission:
@@ -149,7 +149,7 @@ Resources:
     DependsOn: NotificationConfigLambdaRole
     Properties:
       FunctionName: "NotificationConfigLambda"
-      Runtime: python3.8
+      Runtime: python3.10
       Handler: index.handler
       Role: !GetAtt NotificationConfigLambdaRole.Arn
       Code:
