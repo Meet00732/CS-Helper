@@ -27,7 +27,7 @@ jobs:
         mkdir -p dependency_layer/python
 
         # Install all dependencies from requirements.txt into the Lambda layer directory
-        pip install -r requirements.txt -t dependency_layer/python/
+        pip install -r lambda/requirements.txt -t dependency_layer/python/
 
         # Package the Lambda layer
         cd dependency_layer
