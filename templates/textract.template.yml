@@ -75,9 +75,10 @@ Resources:
     Type: AWS::Lambda::Function
     DependsOn: 
       - TextractLambdaRole
+      - RegexLayer
     Properties:
       FunctionName: "TextractLambda"
-      Runtime: python3.10
+      Runtime: python3.8
       Handler: textract_lambda.handler
       Role: !GetAtt TextractLambdaRole.Arn
       Code:
@@ -85,6 +86,8 @@ Resources:
         S3Key: "textract_lambda.zip"
       Timeout: 120
       MemorySize: 1024
+      Layers:
+        - !Ref RegexLayer
 
   # Lambda Permission for S3 Invocation
   TextractLambdaPermission:
@@ -102,9 +105,10 @@ Resources:
     Type: AWS::Lambda::Function
     DependsOn: 
       - TextractLambdaRole
+      - RegexLayer
     Properties:
       FunctionName: "TextCleaningLambda"
-      Runtime: python3.10
+      Runtime: python3.8
       Handler: text_cleaning_lambda.handler
       Role: !GetAtt TextractLambdaRole.Arn
       Code:
@@ -112,6 +116,21 @@ Resources:
         S3Key: "textract_lambda.zip"
       Timeout: 120
       MemorySize: 1024
+      Layers:
+        - !Ref RegexLayer
+
+  
+  # Lambda Layer for Regex
+  RegexLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      LayerName: "RegexLayer"
+      Description: "Lambda Layer for regex dependency"
+      Content:
+        S3Bucket: !Ref BucketName
+        S3Key: "layers/regex_layer.zip"
+      CompatibleRuntimes:
+        - python3.8
 
   # Lambda Permission for TextCleaningLambda
   TextCleaningLambdaPermission:
@@ -130,7 +149,7 @@ Resources:
     DependsOn: NotificationConfigLambdaRole
     Properties:
       FunctionName: "NotificationConfigLambda"
-      Runtime: python3.10
+      Runtime: python3.8
       Handler: index.handler
       Role: !GetAtt NotificationConfigLambdaRole.Arn
       Code:

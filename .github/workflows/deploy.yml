@@ -40,6 +40,19 @@ jobs:
 
         cd ..
 
+    - name: Create Regex Lambda Layer
+      run: |
+        # Prepare a directory for the Lambda layer
+        mkdir -p regex_layer/python
+
+        # Install regex into the Lambda layer directory
+        pip install regex==2024.11.6 -t regex_layer/python/
+
+        # Package the Lambda layer
+        cd regex_layer
+        zip -r9 ../scripts/regex_layer.zip ./*
+        cd ..
+
     - name: Deploy SSM Stack
       run: |
         aws cloudformation deploy \
