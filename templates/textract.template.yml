@@ -78,7 +78,7 @@ Resources:
       - DependencyLayer
     Properties:
       FunctionName: "TextractLambda"
-      Runtime: python3.10
+      Runtime: python3.8
       Handler: textract_lambda.handler
       Role: !GetAtt TextractLambdaRole.Arn
       Code:
@@ -108,7 +108,7 @@ Resources:
       - DependencyLayer
     Properties:
       FunctionName: "TextCleaningLambda"
-      Runtime: python3.10
+      Runtime: python3.8
       Handler: text_cleaning_lambda.handler
       Role: !GetAtt TextractLambdaRole.Arn
       Code:
@@ -130,7 +130,7 @@ Resources:
         S3Bucket: !Ref BucketName
         S3Key: "layers/dependency_layer.zip"
       CompatibleRuntimes:
-        - python3.10
+        - python3.8
 
   # Lambda Permission for TextCleaningLambda
   TextCleaningLambdaPermission:
@@ -149,7 +149,7 @@ Resources:
     DependsOn: NotificationConfigLambdaRole
     Properties:
       FunctionName: "NotificationConfigLambda"
-      Runtime: python3.10
+      Runtime: python3.8
       Handler: index.handler
       Role: !GetAtt NotificationConfigLambdaRole.Arn
       Code:
