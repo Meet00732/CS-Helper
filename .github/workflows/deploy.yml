@@ -32,10 +32,15 @@ jobs:
           apt-get update && apt-get install -y zip
 
           # Create deployment directories
-          mkdir -p scripts lambda/build dependency_layer/python
+          mkdir -p scripts lambda/build dependency_layer/python nltk_data
+
+          # Download NLTK resources
+          python3 -m pip install --upgrade pip
+          python3 -m nltk.downloader -d nltk_data punkt stopwords wordnet
 
           # Copy Lambda handler files to the build directory
           cp lambda/textract_lambda.py lambda/text_cleaning_lambda.py lambda/configuration.py lambda/__init__.py lambda/build/
+          cp -r nltk_data lambda/build/  # Include NLTK data
 
           # Install dependencies for the Lambda function
           pip install -r lambda/requirements.txt -t lambda/build/

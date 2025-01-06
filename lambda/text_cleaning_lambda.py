@@ -16,21 +16,9 @@ logger.setLevel(logging.INFO)
 # Initialize S3 client
 s3 = boto3.client('s3')
 
-# NLTK configuration for AWS Lambda
+# Configure NLTK to use prepackaged resources
 import nltk
-nltk.data.path.append("/tmp")
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt', download_dir='/tmp')
-try:
-    nltk.data.find('corpora/stopwords')
-except LookupError:
-    nltk.download('stopwords', download_dir='/tmp')
-try:
-    nltk.data.find('corpora/wordnet')
-except LookupError:
-    nltk.download('wordnet', download_dir='/tmp')
+nltk.data.path.append("/var/task/nltk_data")  # Path to prepackaged data in the deployment package
 
 # Initialize NLTK tools
 stop_words = set(stopwords.words("english"))
