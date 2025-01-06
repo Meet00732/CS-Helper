@@ -28,6 +28,9 @@ jobs:
 
         # Run the Docker container with the current directory mounted
         docker run --rm -v "$(pwd)":/app -w /app python:3.8 bash -c "
+          # Update package manager and install zip utility
+          apt-get update && apt-get install -y zip
+
           # Create deployment directories
           mkdir -p scripts lambda/build dependency_layer/python
 
