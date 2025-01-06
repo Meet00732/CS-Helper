@@ -21,32 +21,13 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
-    - name: Install Dependencies and Package Lambda
-      run: |
-        # Create a directory for the deployment package
-        mkdir -p scripts
-        cd lambda
-
-        # Install dependencies into the Lambda directory
-        pip install -r requirements.txt -t ./
-
-        # Clean unnecessary files
-        find . -name "__pycache__" -type d -exec rm -r {} +
-        find . -name "*.dist-info" -type d -exec rm -r {} +
-        find . -name "tests" -type d -exec rm -r {} +
-
-        # Create the deployment package
-        zip -r9 ../scripts/textract_lambda.zip ./*
-
-        cd ..
-
     - name: Create Regex Lambda Layer
       run: |
         # Prepare a directory for the Lambda layer
         mkdir -p regex_layer/python
 
         # Install regex into the Lambda layer directory
-        pip install regex==2024.11.6 -t regex_layer/python/
+        pip install -r requirements.txt -t ./
 
         # Package the Lambda layer
         cd regex_layer
