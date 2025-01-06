@@ -32,7 +32,7 @@ jobs:
     - name: Create Lambda Layer for Spacy
       run: |
         mkdir -p layer/python
-        pip install spacy==3.5.0 -t layer/python/  # Adjust version as needed
+        pip install spacy==3.8.3 -t layer/python/  # Adjust version as needed
         cd layer
         zip -r9 ../spacy_lambda_layer.zip ./*
         cd ..
