@@ -89,16 +89,6 @@ def detect_and_tag_headings(text):
             tagged_lines.append(f"[HEADING] {stripped_line}")
             continue
 
-        # Headings with fewer than 10 words and no punctuation
-        if re.match(r"^[A-Za-z\s]+$", stripped_line) and len(stripped_line.split()) <= 10:
-            tagged_lines.append(f"[HEADING] {stripped_line}")
-            continue
-
-        # Headings with trailing colon (e.g., "Summary:")
-        if stripped_line.endswith(":") and len(stripped_line.split()) <= 10:
-            tagged_lines.append(f"[HEADING] {stripped_line}")
-            continue
-
         # Default: keep the original line
         tagged_lines.append(line)
 
