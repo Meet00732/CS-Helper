@@ -20,9 +20,22 @@ s3 = boto3.client('s3')
 import nltk
 nltk.data.path.append("/var/task/nltk_data")  # Path to prepackaged data in the deployment package
 
-# Initialize NLTK tools
-stop_words = set(stopwords.words("english"))
-lemmatizer = WordNetLemmatizer()
+# Initialize NLTK tools with fallback
+try:
+    stop_words = set(stopwords.words("english"))
+except LookupError as e:
+    logger.warning("Missing stopwords resource; attempting to download dynamically.")
+    nltk.download("stopwords", download_dir="/tmp")
+    nltk.data.path.append("/tmp")
+    stop_words = set(stopwords.words("english"))
+
+try:
+    lemmatizer = WordNetLemmatizer()
+except LookupError as e:
+    logger.warning("Missing wordnet resource; attempting to download dynamically.")
+    nltk.download("wordnet", download_dir="/tmp")
+    nltk.data.path.append("/tmp")
+    lemmatizer = WordNetLemmatizer()
 
 # Text cleaning functions
 def remove_html_tags(text):

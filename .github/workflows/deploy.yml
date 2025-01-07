@@ -27,28 +27,34 @@ jobs:
         docker run --rm -v "$(pwd)":/app -w /app python:3.8 bash -c "
           apt-get update && apt-get install -y zip
 
-          # Create deployment directories
-          mkdir -p scripts lambda/build nltk_data
+          # Log progress
+          echo 'Setting up directories...'
+          mkdir -p scripts lambda/build lambda/build/nltk_data
 
-          # Install all Python dependencies in a single environment
-          python3 -m pip install --upgrade pip --root-user-action=ignore
-          python3 -m pip install nltk textblob -t lambda/build/
+          # Install dependencies
+          echo 'Installing dependencies...'
+          python3.8 -m pip install --upgrade pip
+          python3.8 -m pip install -r lambda/requirements.txt -t lambda/build/
 
-          # Download necessary data for NLTK and TextBlob
-          python3 -m nltk.downloader -d nltk_data punkt punkt_tab brown stopwords wordnet averaged_perceptron_tagger
-          python3 -m textblob.download_corpora -d nltk_data
+          # Download necessary data for NLTK and TextBlob directly into lambda/build/nltk_data
+          echo 'Downloading NLTK and TextBlob data...'
+          python3.8 -m nltk.downloader -d lambda/build/nltk_data punkt stopwords wordnet averaged_perceptron_tagger
+          python3.8 -m textblob.download_corpora -d lambda/build/nltk_data
 
           # Verify downloaded resources
-          echo 'Contents of nltk_data after download:'
-          ls -R nltk_data
-
-          # Copy downloaded NLTK and TextBlob data into the Lambda build directory
-          cp -r nltk_data lambda/build/
+          echo 'Contents of lambda/build/nltk_data:'
+          ls -R lambda/build/nltk_data/
 
           # Copy Lambda handler files to the build directory
+          echo 'Copying files to build directory...'
           cp lambda/*.py lambda/build/
 
+          # Verify the build directory structure
+          echo 'Verifying build directory...'
+          ls -R lambda/build/
+
           # Package the Lambda function
+          echo 'Packaging Lambda function...'
           cd lambda/build
           zip -r ../../scripts/textract_lambda.zip ./*
           cd /app
@@ -63,11 +69,11 @@ jobs:
 
     - name: Upload YAML templates and Lambda package to S3
       run: |
-        aws s3 cp scripts/textract_lambda.zip s3://cs-helper/textract_lambda.zip
-        aws s3 cp templates/s3.template.yml s3://cs-helper/template/
-        aws s3 cp templates/ssm.template.yml s3://cs-helper/template/
-        aws s3 cp templates/textract.template.yml s3://cs-helper/template/
-        aws s3 cp templates/master-stack.template.yml s3://cs-helper/template/
+        aws s3 cp scripts/textract_lambda.zip s3://${{ secrets.BUCKET_NAME }}/textract_lambda.zip
+        aws s3 cp templates/s3.template.yml s3://${{ secrets.BUCKET_NAME }}/template/
+        aws s3 cp templates/ssm.template.yml s3://${{ secrets.BUCKET_NAME }}/template/
+        aws s3 cp templates/textract.template.yml s3://${{ secrets.BUCKET_NAME }}/template/
+        aws s3 cp templates/master-stack.template.yml s3://${{ secrets.BUCKET_NAME }}/template/
 
     - name: Deploy Master Stack
       run: |
