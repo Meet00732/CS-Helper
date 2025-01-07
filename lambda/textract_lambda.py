@@ -4,7 +4,8 @@ from configuration import configuration
 
 def extract_text_by_columns(textract_response):
     """
-    Process AWS Textract response to handle two-column documents.
+    Process AWS Textract response to handle two-column documents by processing
+    the left column entirely before the right column.
     """
     blocks = textract_response.get("Blocks", [])
     text_blocks = [block for block in blocks if block["BlockType"] == "LINE"]
@@ -23,17 +24,12 @@ def extract_text_by_columns(textract_response):
     left_column = sorted(left_column, key=lambda x: x["Geometry"]["BoundingBox"]["Top"])
     right_column = sorted(right_column, key=lambda x: x["Geometry"]["BoundingBox"]["Top"])
 
-    # Merge columns alternately to reconstruct logical flow
-    combined_text = []
-    max_len = max(len(left_column), len(right_column))
-
-    for i in range(max_len):
-        if i < len(left_column):
-            combined_text.append(left_column[i]["Text"])
-        if i < len(right_column):
-            combined_text.append(right_column[i]["Text"])
+    # Combine the text, processing the left column first
+    combined_text = [block["Text"] for block in left_column]
+    combined_text.extend(block["Text"] for block in right_column)
 
     return "\n".join(combined_text)
+
 
 def handler(event, context):
     s3 = boto3.client('s3')
