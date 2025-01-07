@@ -71,7 +71,7 @@ def remove_special_characters(text):
 
 def detect_and_tag_headings(text):
     """
-    Detects headings using formatting, position, and common keywords.
+    Detects and tags headings using formatting, position, and common keywords.
     """
     lines = text.split("\n")
     tagged_lines = []
@@ -84,8 +84,8 @@ def detect_and_tag_headings(text):
             tagged_lines.append(f"[HEADING] {stripped_line}")
             continue
 
-        # Numbered headings (e.g., "1. Introduction", "1-1 Objectives")
-        if re.match(r"^\d+(\.\d+)*[\.\-]?\s+[A-Za-z]+", stripped_line):
+        # Numbered headings (e.g., "1. Introduction", "1-1 Objectives", "1) Heading")
+        if re.match(r"^\d+(\.\d+)*[\.\-\)]?\s+[A-Za-z]+", stripped_line):
             tagged_lines.append(f"[HEADING] {stripped_line}")
             continue
 
@@ -99,9 +99,11 @@ def detect_and_tag_headings(text):
             tagged_lines.append(f"[HEADING] {stripped_line}")
             continue
 
-        tagged_lines.append(stripped_line)
+        # Default: keep the original line
+        tagged_lines.append(line)
 
     return "\n".join(tagged_lines)
+
 
 
 
@@ -118,59 +120,61 @@ def annotate_entities(text):
     """
     comprehend = boto3.client("comprehend")
     sentences = sent_tokenize(text)
-    annotated_text = list(text)  # Convert text to a mutable list for offset-based replacement
+    annotated_lines = text.splitlines()  # Preserve line structure
 
-    current_position = 0  # Tracks position in the original text
-
-    for sentence in sentences:
+    for i, line in enumerate(annotated_lines):
         try:
-            response = comprehend.detect_entities(Text=sentence, LanguageCode="en")
+            response = comprehend.detect_entities(Text=line, LanguageCode="en")
             entities = response["Entities"]
-            
-            # Adjust offsets based on the sentence's position in the original text
-            sentence_start = text.find(sentence, current_position)
-            sentence_end = sentence_start + len(sentence)
-            
-            # Process entities in reverse order to avoid offset conflicts
+
+            # Sort entities by offset for accurate annotation
             for entity in sorted(entities, key=lambda x: x["BeginOffset"], reverse=True):
                 if entity["Type"] in ["PERSON", "ORGANIZATION", "LOCATION", "TITLE"]:
-                    # Skip redundant or irrelevant entities
-                    if len(entity["Text"]) > 2:
-                        start = sentence_start + entity["BeginOffset"]
-                        end = sentence_start + entity["EndOffset"]
-                        annotated_text[start:end] = f"[{entity['Type']}] {text[start:end]}"
-            
-            # Update current position
-            current_position = sentence_end
+                    # Annotate the line while preserving original text
+                    start, end = entity["BeginOffset"], entity["EndOffset"]
+                    annotated_line = list(line)
+                    annotated_line[start:end] = f"[{entity['Type']}] {line[start:end]}"
+                    annotated_lines[i] = "".join(annotated_line)
         except Exception as e:
-            logger.warning(f"Error detecting entities for sentence: {sentence}. Error: {e}")
+            logger.warning(f"Error detecting entities for line: {line}. Error: {e}")
             continue
 
-    return "".join(annotated_text)
+    return "\n".join(annotated_lines)
+
 
 
 
 
 # Data cleaning pipeline
 def data_cleaning_pipeline(raw_text):
-    # Detect and tag headings first
-    cleaned_text = detect_and_tag_headings(raw_text)
+    # Step 1: Detect and tag headings first
+    tagged_text = detect_and_tag_headings(raw_text)
 
-    # Remove unwanted data
-    cleaned_text = remove_html_tags(cleaned_text)
-    cleaned_text = to_lowercase(cleaned_text)
-    cleaned_text = standardize_accented_chars(cleaned_text)
-    cleaned_text = remove_domains(cleaned_text)
-    cleaned_text = remove_emails(cleaned_text)
-    cleaned_text = remove_links(cleaned_text)
-    cleaned_text = remove_phone_numbers(cleaned_text)
-    cleaned_text = remove_special_characters(cleaned_text)
-    cleaned_text = capitalize_proper_nouns(cleaned_text)
+    # Step 2: Remove unwanted data while preserving structure
+    lines = tagged_text.splitlines()
+    cleaned_lines = []
 
-    # Annotate entities after cleaning
-    cleaned_text = annotate_entities(cleaned_text)
+    for line in lines:
+        # Clean individual lines
+        line = remove_html_tags(line)
+        line = to_lowercase(line)
+        line = standardize_accented_chars(line)
+        line = remove_domains(line)
+        line = remove_emails(line)
+        line = remove_links(line)
+        line = remove_phone_numbers(line)
+        line = remove_special_characters(line)
+        line = capitalize_proper_nouns(line)
+        line = standardize_dates(line)
 
-    return cleaned_text
+        # Append cleaned line
+        cleaned_lines.append(line)
+
+    # Step 3: Annotate entities after cleaning
+    cleaned_text = "\n".join(cleaned_lines)
+    annotated_text = annotate_entities(cleaned_text)
+
+    return annotated_text
 
 
 
