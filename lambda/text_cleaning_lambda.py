@@ -99,11 +99,6 @@ def detect_and_tag_headings(text):
             tagged_lines.append(f"[HEADING] {stripped_line}")
             continue
 
-        # Contextual headings: Isolated lines surrounded by blank lines
-        if (i > 0 and not lines[i - 1].strip()) and (i == len(lines) - 1 or not lines[i + 1].strip()):
-            tagged_lines.append(f"[HEADING] {stripped_line}")
-            continue
-
         tagged_lines.append(stripped_line)
 
     return "\n".join(tagged_lines)
@@ -123,24 +118,37 @@ def annotate_entities(text):
     """
     comprehend = boto3.client("comprehend")
     sentences = sent_tokenize(text)
-    annotated_text = list(text)  # Convert text to a list of characters for accurate replacement
-    
+    annotated_text = list(text)  # Convert text to a mutable list for offset-based replacement
+
+    current_position = 0  # Tracks position in the original text
+
     for sentence in sentences:
         try:
             response = comprehend.detect_entities(Text=sentence, LanguageCode="en")
             entities = response["Entities"]
             
-            # Process entities in reverse order of offsets to avoid conflicts
+            # Adjust offsets based on the sentence's position in the original text
+            sentence_start = text.find(sentence, current_position)
+            sentence_end = sentence_start + len(sentence)
+            
+            # Process entities in reverse order to avoid offset conflicts
             for entity in sorted(entities, key=lambda x: x["BeginOffset"], reverse=True):
-                if entity["Type"] in ["PERSON", "ORGANIZATION", "LOCATION", "QUANTITY", "TITLE"]:
-                    # Annotate text using offsets
-                    start, end = entity["BeginOffset"], entity["EndOffset"]
-                    annotated_text[start:end] = f"[{entity['Type']}] {entity['Text']}"
+                if entity["Type"] in ["PERSON", "ORGANIZATION", "LOCATION", "TITLE"]:
+                    # Skip redundant or irrelevant entities
+                    if len(entity["Text"]) > 2:
+                        start = sentence_start + entity["BeginOffset"]
+                        end = sentence_start + entity["EndOffset"]
+                        annotated_text[start:end] = f"[{entity['Type']}] {text[start:end]}"
+            
+            # Update current position
+            current_position = sentence_end
         except Exception as e:
             logger.warning(f"Error detecting entities for sentence: {sentence}. Error: {e}")
             continue
 
     return "".join(annotated_text)
+
+
 
 
 # Data cleaning pipeline
@@ -159,10 +167,11 @@ def data_cleaning_pipeline(raw_text):
     cleaned_text = remove_special_characters(cleaned_text)
     cleaned_text = capitalize_proper_nouns(cleaned_text)
 
-    # Annotate entities
+    # Annotate entities after cleaning
     cleaned_text = annotate_entities(cleaned_text)
 
     return cleaned_text
+
 
 
 # Lambda handler
