@@ -26,34 +26,32 @@ jobs:
         docker pull python:3.8
         docker run --rm -v "$(pwd)":/app -w /app python:3.8 bash -c "
           apt-get update && apt-get install -y zip
+          
+          # Step 1: Set up directories
+          echo 'Creating deployment directories...'
+          mkdir -p scripts lambda/build nltk_data
 
-          # Log progress
-          echo 'Setting up directories...'
-          mkdir -p scripts lambda/build lambda/build/nltk_data
+          # Step 2: Install Python dependencies
+          echo 'Installing Python dependencies...'
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r lambda/requirements.txt -t lambda/build/
 
-          # Install dependencies
-          echo 'Installing dependencies...'
-          python3.8 -m pip install --upgrade pip
-          python3.8 -m pip install -r lambda/requirements.txt -t lambda/build/
+          # Step 3: Download NLTK and TextBlob resources
+          echo 'Downloading NLTK and TextBlob resources...'
+          python3 -m pip install nltk textblob
+          python3 -m nltk.downloader -d nltk_data punkt stopwords wordnet averaged_perceptron_tagger
+          python3 -m textblob.download_corpora -d nltk_data
 
-          # Download necessary data for NLTK and TextBlob directly into lambda/build/nltk_data
-          echo 'Downloading NLTK and TextBlob data...'
-          python3.8 -m nltk.downloader -d lambda/build/nltk_data punkt punkt_tab stopwords wordnet
-          python3.8 -m textblob.download_corpora -d lambda/build/nltk_data
-
-          # Verify downloaded resources
-          echo 'Contents of lambda/build/nltk_data:'
-          ls -R lambda/build/nltk_data/
-
-          # Copy Lambda handler files to the build directory
-          echo 'Copying files to build directory...'
+          # Step 4: Copy resources to Lambda build directory
+          echo 'Copying resources to Lambda build directory...'
+          cp -r nltk_data lambda/build/
           cp lambda/*.py lambda/build/
 
-          # Verify the build directory structure
-          echo 'Verifying build directory...'
+          # Verify contents of the build directory
+          echo 'Verifying Lambda build directory contents...'
           ls -R lambda/build/
 
-          # Package the Lambda function
+          # Step 5: Package the Lambda function
           echo 'Packaging Lambda function...'
           cd lambda/build
           zip -r ../../scripts/textract_lambda.zip ./*
