@@ -28,16 +28,19 @@ jobs:
           apt-get update && apt-get install -y zip
 
           # Create deployment directories
-          mkdir -p scripts lambda/build dependency_layer/python nltk_data
+          mkdir -p scripts lambda/build nltk_data
 
-          # Install all Python dependencies and data only once
+          # Install all Python dependencies
           python3 -m pip install --upgrade pip
           python3 -m pip install -r lambda/requirements.txt -t lambda/build/
-          python3 -m pip install -r lambda/requirements.txt -t dependency_layer/python/
 
-          # Download necessary data for NLTK and TextBlob
+          # Ensure NLTK and TextBlob are installed before downloading data
           python3 -m nltk.downloader -d nltk_data punkt punkt_tab brown stopwords wordnet
           python3 -m textblob.download_corpora -d nltk_data
+
+          # Debugging: Check if nltk_data folder has content
+          echo 'Contents of nltk_data after download:'
+          ls -R nltk_data
 
           # Copy downloaded NLTK and TextBlob data into the Lambda build directory
           cp -r nltk_data lambda/build/
@@ -49,10 +52,6 @@ jobs:
           cd lambda/build
           zip -r ../../scripts/textract_lambda.zip ./*
           cd /app
-
-          # Package the Lambda layer
-          cd dependency_layer
-          zip -r ../scripts/dependency_layer.zip ./*
         "
 
     - name: Deploy SSM Stack
@@ -65,7 +64,6 @@ jobs:
     - name: Upload YAML templates and Lambda package to S3
       run: |
         aws s3 cp scripts/textract_lambda.zip s3://cs-helper/textract_lambda.zip
-        aws s3 cp scripts/dependency_layer.zip s3://cs-helper/layers/dependency_layer.zip
         aws s3 cp templates/s3.template.yml s3://cs-helper/template/
         aws s3 cp templates/ssm.template.yml s3://cs-helper/template/
         aws s3 cp templates/textract.template.yml s3://cs-helper/template/
