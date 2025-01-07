@@ -110,17 +110,16 @@ def annotate_entities(text):
 def data_cleaning_pipeline(raw_text):
     cleaned_text = remove_html_tags(raw_text)
     cleaned_text = to_lowercase(cleaned_text)
+    cleaned_text = remove_domains(cleaned_text)
     cleaned_text = remove_emails(cleaned_text)
-    cleaned_text = remove_phone_numbers(cleaned_text)
     cleaned_text = remove_links(cleaned_text)
+    cleaned_text = remove_phone_numbers(cleaned_text)
     cleaned_text = standardize_accented_chars(cleaned_text)
     cleaned_text = annotate_entities(cleaned_text)
     cleaned_text = remove_special_characters(cleaned_text)
-    cleaned_text = remove_punctuation(cleaned_text)
     cleaned_text = lemmatization(cleaned_text)
     cleaned_text = remove_stopwords(cleaned_text)
     cleaned_text = capitalize_proper_nouns(cleaned_text)
-    cleaned_text = remove_domains(cleaned_text)
     return cleaned_text
 
 
