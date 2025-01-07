@@ -3,10 +3,7 @@ import re
 import unicodedata
 import logging
 from bs4 import BeautifulSoup
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize, sent_tokenize
-from nltk.stem import WordNetLemmatizer
-# from textblob import TextBlob
+from nltk.tokenize import sent_tokenize
 from datetime import datetime
 from configuration import configuration
 
@@ -27,22 +24,6 @@ s3 = boto3.client('s3')
 import nltk
 nltk.data.path.append("/var/task/nltk_data")  # Path to prepackaged data in the deployment package
 
-# Initialize NLTK tools with fallback
-try:
-    stop_words = set(stopwords.words("english"))
-except LookupError as e:
-    logger.warning("Missing stopwords resource; attempting to download dynamically.")
-    nltk.download("stopwords", download_dir="/tmp")
-    nltk.data.path.append("/tmp")
-    stop_words = set(stopwords.words("english"))
-
-try:
-    lemmatizer = WordNetLemmatizer()
-except LookupError as e:
-    logger.warning("Missing wordnet resource; attempting to download dynamically.")
-    nltk.download("wordnet", download_dir="/tmp")
-    nltk.data.path.append("/tmp")
-    lemmatizer = WordNetLemmatizer()
 
 # Text cleaning functions
 def remove_html_tags(text):
@@ -56,11 +37,6 @@ def standardize_accented_chars(text):
 
 def remove_punctuation(text):
     return "".join([c for c in text if c not in re.escape("!#$%&'()*+,-./:;<=>?@[\\]^_`{|}~")])
-
-
-def remove_stopwords(text):
-    words = word_tokenize(text)
-    return " ".join([word for word in words if word.lower() not in stop_words])
 
 def remove_emails(text):
     return re.sub(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', '', text)
@@ -103,29 +79,28 @@ def detect_and_tag_headings(text):
     for i, line in enumerate(lines):
         stripped_line = line.strip()
 
-        # 1. Common heading list
+        # Common headings list
         if stripped_line.lower() in COMMON_HEADINGS:
             tagged_lines.append(f"[HEADING] {stripped_line}")
             continue
 
-        # 2. Line has no punctuation and fewer than 5 words.
+        # Numbered headings (e.g., "1. Introduction", "1-1 Objectives")
+        if re.match(r"^\d+(\.\d+)*[\.\-]?\s+[A-Za-z]+", stripped_line):
+            tagged_lines.append(f"[HEADING] {stripped_line}")
+            continue
+
+        # Headings with fewer than 10 words and no punctuation
         if re.match(r"^[A-Za-z\s]+$", stripped_line) and len(stripped_line.split()) <= 10:
             tagged_lines.append(f"[HEADING] {stripped_line}")
             continue
 
-        # 3. Numbered headings
-        if re.match(r"^\d+[\.\-]?\s*[A-Za-z]+", stripped_line):
+        # Headings with trailing colon (e.g., "Summary:")
+        if stripped_line.endswith(":") and len(stripped_line.split()) <= 10:
             tagged_lines.append(f"[HEADING] {stripped_line}")
             continue
 
-        # 4. Trailing colon
-        if stripped_line.endswith(":") and len(stripped_line.split()) <= 5:
-            tagged_lines.append(f"[HEADING] {stripped_line}")
-            continue
-        
-        # 5. Contextual. 
-        # Look at surrounding lines to determine if this is likely a heading.
-        if (i > 0 and not lines[i - 1].strip() and (i == len(lines) - 1 or not lines[i + 1].strip())):
+        # Contextual headings: Isolated lines surrounded by blank lines
+        if (i > 0 and not lines[i - 1].strip()) and (i == len(lines) - 1 or not lines[i + 1].strip()):
             tagged_lines.append(f"[HEADING] {stripped_line}")
             continue
 
@@ -145,48 +120,46 @@ def detect_and_tag_headings(text):
 def annotate_entities(text):
     """
     Annotate text with entities detected by AWS Comprehend.
-    This function includes PERSON, ORGANIZATION, LOCATION, and technical terms.
     """
     comprehend = boto3.client("comprehend")
     sentences = sent_tokenize(text)
-    annotated_text = text
+    annotated_text = list(text)  # Convert text to a list of characters for accurate replacement
     
     for sentence in sentences:
         try:
-            # Detect entities for each sentence
             response = comprehend.detect_entities(Text=sentence, LanguageCode="en")
             entities = response["Entities"]
             
-            for entity in entities:
-                # Annotate only desired entity types and technical terms
+            # Process entities in reverse order of offsets to avoid conflicts
+            for entity in sorted(entities, key=lambda x: x["BeginOffset"], reverse=True):
                 if entity["Type"] in ["PERSON", "ORGANIZATION", "LOCATION", "QUANTITY", "TITLE"]:
-                    annotated_text = annotated_text.replace(
-                        entity["Text"], f"[{entity['Type']}] {entity['Text']}", 1
-                    )
+                    # Annotate text using offsets
+                    start, end = entity["BeginOffset"], entity["EndOffset"]
+                    annotated_text[start:end] = f"[{entity['Type']}] {entity['Text']}"
         except Exception as e:
             logger.warning(f"Error detecting entities for sentence: {sentence}. Error: {e}")
             continue
 
-    return annotated_text
+    return "".join(annotated_text)
+
 
 # Data cleaning pipeline
 def data_cleaning_pipeline(raw_text):
-    # Identify Headings
+    # Detect and tag headings first
     cleaned_text = detect_and_tag_headings(raw_text)
 
-    # Pre-Cleaning Steps
+    # Remove unwanted data
     cleaned_text = remove_html_tags(cleaned_text)
     cleaned_text = to_lowercase(cleaned_text)
     cleaned_text = standardize_accented_chars(cleaned_text)
-
-    # Core Cleaning Steps
     cleaned_text = remove_domains(cleaned_text)
     cleaned_text = remove_emails(cleaned_text)
     cleaned_text = remove_links(cleaned_text)
     cleaned_text = remove_phone_numbers(cleaned_text)
     cleaned_text = remove_special_characters(cleaned_text)
-    cleaned_text = remove_stopwords(cleaned_text)
     cleaned_text = capitalize_proper_nouns(cleaned_text)
+
+    # Annotate entities
     cleaned_text = annotate_entities(cleaned_text)
 
     return cleaned_text

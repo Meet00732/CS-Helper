@@ -36,12 +36,10 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install -r lambda/requirements.txt -t lambda/build/
 
-          # Step 3: Download NLTK and TextBlob resources
+          # Step 3: Download NLTK
           echo 'Downloading NLTK resources...'
-          python3 -m pip install nltk textblob
-          python3 -m nltk.downloader -d nltk_data punkt punkt_tab stopwords wordnet
-          echo 'Downloading Textblob resources...'
-          python3 -m textblob.download_corpora -d nltk_data
+          python3 -m pip install nltk
+          python3 -m nltk.downloader -d nltk_data punkt punkt_tab
 
           # Step 4: Copy resources to Lambda build directory
           echo 'Copying resources to Lambda build directory...'
