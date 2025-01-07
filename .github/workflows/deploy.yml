@@ -30,15 +30,15 @@ jobs:
           # Create deployment directories
           mkdir -p scripts lambda/build nltk_data
 
-          # Install all Python dependencies
-          python3 -m pip install --upgrade pip
-          python3 -m pip install -r lambda/requirements.txt -t lambda/build/
+          # Install all Python dependencies in a single environment
+          python3 -m pip install --upgrade pip --root-user-action=ignore
+          python3 -m pip install nltk textblob -t lambda/build/
 
-          # Ensure NLTK and TextBlob are installed before downloading data
-          python3 -m nltk.downloader -d nltk_data punkt punkt_tab brown stopwords wordnet
+          # Download necessary data for NLTK and TextBlob
+          python3 -m nltk.downloader -d nltk_data punkt punkt_tab brown stopwords wordnet averaged_perceptron_tagger
           python3 -m textblob.download_corpora -d nltk_data
 
-          # Debugging: Check if nltk_data folder has content
+          # Verify downloaded resources
           echo 'Contents of nltk_data after download:'
           ls -R nltk_data
 
