@@ -4,7 +4,7 @@ import unicodedata
 import logging
 from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
+from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.stem import WordNetLemmatizer
 # from textblob import TextBlob
 from datetime import datetime
@@ -48,16 +48,9 @@ def to_lowercase(text):
 def standardize_accented_chars(text):
     return unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("utf-8", "ignore")
 
-def remove_special_characters(text):
-    pattern = r"[^a-zA-Z0-9.,!?/:;\"\'\s]"
-    return re.sub(pattern, "", text)
-
 def remove_punctuation(text):
     return "".join([c for c in text if c not in re.escape("!#$%&'()*+,-./:;<=>?@[\\]^_`{|}~")])
 
-def lemmatization(text):
-    words = word_tokenize(text)
-    return " ".join([lemmatizer.lemmatize(word) for word in words])
 
 def remove_stopwords(text):
     words = word_tokenize(text)
@@ -96,14 +89,30 @@ def remove_domains(text):
 #     return annotated_text
 
 def annotate_entities(text):
+    """
+    Annotate text with entities detected by AWS Comprehend.
+    This function includes PERSON, ORGANIZATION, LOCATION, and technical terms.
+    """
     comprehend = boto3.client("comprehend")
-    response = comprehend.detect_entities(Text=text, LanguageCode="en")
-    entities = response["Entities"]
+    sentences = sent_tokenize(text)
     annotated_text = text
-    for entity in entities:
-        annotated_text = annotated_text.replace(
-            entity["Text"], f"[{entity['Type']}] {entity['Text']}"
-        )
+    
+    for sentence in sentences:
+        try:
+            # Detect entities for each sentence
+            response = comprehend.detect_entities(Text=sentence, LanguageCode="en")
+            entities = response["Entities"]
+            
+            for entity in entities:
+                # Annotate only desired entity types and technical terms
+                if entity["Type"] in ["PERSON", "ORGANIZATION", "LOCATION", "OTHER"]:
+                    annotated_text = annotated_text.replace(
+                        entity["Text"], f"[{entity['Type']}] {entity['Text']}", 1
+                    )
+        except Exception as e:
+            logger.warning(f"Error detecting entities for sentence: {sentence}. Error: {e}")
+            continue
+
     return annotated_text
 
 # Data cleaning pipeline
@@ -116,8 +125,6 @@ def data_cleaning_pipeline(raw_text):
     cleaned_text = remove_phone_numbers(cleaned_text)
     cleaned_text = standardize_accented_chars(cleaned_text)
     cleaned_text = annotate_entities(cleaned_text)
-    cleaned_text = remove_special_characters(cleaned_text)
-    cleaned_text = lemmatization(cleaned_text)
     cleaned_text = remove_stopwords(cleaned_text)
     cleaned_text = capitalize_proper_nouns(cleaned_text)
     return cleaned_text
