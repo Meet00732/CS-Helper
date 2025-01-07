@@ -82,6 +82,10 @@ def capitalize_proper_nouns(text):
     return " ".join([word.capitalize() if word.islower() and len(word) > 3 else word for word in words])
 
 
+def remove_domains(text):
+    """Remove .com and similar domain extensions."""
+    return re.sub(r'\b\w+\.(com|org|net|edu|gov|info|io|xyz|co)\b', '', text)
+
 
 
 # def annotate_entities(text):
@@ -91,6 +95,17 @@ def capitalize_proper_nouns(text):
 #         annotated_text = annotated_text.replace(noun_phrase, f"[ENTITY] {noun_phrase}")
 #     return annotated_text
 
+def annotate_entities(text):
+    comprehend = boto3.client("comprehend")
+    response = comprehend.detect_entities(Text=text, LanguageCode="en")
+    entities = response["Entities"]
+    annotated_text = text
+    for entity in entities:
+        annotated_text = annotated_text.replace(
+            entity["Text"], f"[{entity["Type"]}] {entity["Text"]}"
+        )
+    return annotated_text
+
 # Data cleaning pipeline
 def data_cleaning_pipeline(raw_text):
     cleaned_text = remove_html_tags(raw_text)
@@ -99,11 +114,13 @@ def data_cleaning_pipeline(raw_text):
     cleaned_text = remove_phone_numbers(cleaned_text)
     cleaned_text = remove_links(cleaned_text)
     cleaned_text = standardize_accented_chars(cleaned_text)
+    cleaned_text = annotate_entities(cleaned_text)
     cleaned_text = remove_special_characters(cleaned_text)
     cleaned_text = remove_punctuation(cleaned_text)
     cleaned_text = lemmatization(cleaned_text)
     cleaned_text = remove_stopwords(cleaned_text)
     cleaned_text = capitalize_proper_nouns(cleaned_text)
+    cleaned_text = remove_domains(cleaned_text)
     return cleaned_text
 
 
