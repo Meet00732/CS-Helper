@@ -30,37 +30,30 @@ jobs:
           # Create deployment directories
           mkdir -p scripts lambda/build dependency_layer/python nltk_data
 
-          # Install NLTK and TextBlob for downloading data
+          # Install all Python dependencies and data only once
           python3 -m pip install --upgrade pip
-          python3 -m pip install nltk textblob
+          python3 -m pip install -r lambda/requirements.txt -t lambda/build/
+          python3 -m pip install -r lambda/requirements.txt -t dependency_layer/python/
 
           # Download necessary data for NLTK and TextBlob
-          python3 -m nltk.downloader -d nltk_data punkt_tab punkt brown stopwords wordnet averaged_perceptron_tagger
+          python3 -m nltk.downloader -d nltk_data punkt punkt_tab brown stopwords wordnet
           python3 -m textblob.download_corpora -d nltk_data
 
-          # Verify downloaded resources
-          ls -R nltk_data/
+          # Copy downloaded NLTK and TextBlob data into the Lambda build directory
+          cp -r nltk_data lambda/build/
 
           # Copy Lambda handler files to the build directory
-          cp lambda/text_cleaning_lambda.py lambda/textract_lambda.py lambda/configuration.py lambda/__init__.py lambda/build/
-          cp -r nltk_data lambda/build/  # Include NLTK and TextBlob data
-
-          # Install dependencies for the Lambda function
-          pip install -r lambda/requirements.txt -t lambda/build/
+          cp lambda/*.py lambda/build/
 
           # Package the Lambda function
           cd lambda/build
           zip -r ../../scripts/textract_lambda.zip ./*
           cd /app
 
-          # Install dependencies for the Lambda layer
-          pip install -r lambda/requirements.txt -t dependency_layer/python/
-
           # Package the Lambda layer
           cd dependency_layer
           zip -r ../scripts/dependency_layer.zip ./*
         "
-
 
     - name: Deploy SSM Stack
       run: |
