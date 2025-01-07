@@ -30,10 +30,9 @@ jobs:
           # Create deployment directories
           mkdir -p scripts lambda/build dependency_layer/python nltk_data
 
-          # Install dependencies from requirements.txt
+          # Install NLTK and TextBlob for downloading data
           python3 -m pip install --upgrade pip
-          python3 -m pip install -r lambda/requirements.txt -t lambda/build/
-          python3 -m pip install -r lambda/requirements.txt -t dependency_layer/python/
+          python3 -m pip install nltk textblob
 
           # Download necessary data for NLTK and TextBlob
           python3 -m nltk.downloader -d nltk_data punkt_tab stopwords wordnet averaged_perceptron_tagger
@@ -46,15 +45,22 @@ jobs:
           cp lambda/text_cleaning_lambda.py lambda/textract_lambda.py lambda/configuration.py lambda/__init__.py lambda/build/
           cp -r nltk_data lambda/build/  # Include NLTK and TextBlob data
 
+          # Install dependencies for the Lambda function
+          pip install -r lambda/requirements.txt -t lambda/build/
+
           # Package the Lambda function
           cd lambda/build
           zip -r ../../scripts/textract_lambda.zip ./*
           cd /app
 
+          # Install dependencies for the Lambda layer
+          pip install -r lambda/requirements.txt -t dependency_layer/python/
+
           # Package the Lambda layer
           cd dependency_layer
           zip -r ../scripts/dependency_layer.zip ./*
         "
+
 
     - name: Deploy SSM Stack
       run: |
