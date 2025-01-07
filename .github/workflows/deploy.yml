@@ -39,7 +39,7 @@ jobs:
           # Step 3: Download NLTK and TextBlob resources
           echo 'Downloading NLTK and TextBlob resources...'
           python3 -m pip install nltk textblob
-          python3 -m nltk.downloader -d nltk_data punkt stopwords wordnet averaged_perceptron_tagger
+          python3 -m nltk.downloader -d nltk_data punkt punkt_tab stopwords wordnet
           python3 -m textblob.download_corpora -d nltk_data
 
           # Step 4: Copy resources to Lambda build directory
