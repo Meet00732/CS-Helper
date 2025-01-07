@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
-from textblob import TextBlob
+# from textblob import TextBlob
 from configuration import configuration
 
 # Configure logging
@@ -65,12 +65,12 @@ def remove_stopwords(text):
     words = word_tokenize(text)
     return " ".join([word for word in words if word.lower() not in stop_words])
 
-def annotate_entities(text):
-    blob = TextBlob(text)
-    annotated_text = text
-    for noun_phrase in blob.noun_phrases:
-        annotated_text = annotated_text.replace(noun_phrase, f"[ENTITY] {noun_phrase}")
-    return annotated_text
+# def annotate_entities(text):
+#     blob = TextBlob(text)
+#     annotated_text = text
+#     for noun_phrase in blob.noun_phrases:
+#         annotated_text = annotated_text.replace(noun_phrase, f"[ENTITY] {noun_phrase}")
+#     return annotated_text
 
 # Data cleaning pipeline
 def data_cleaning_pipeline(raw_text):
