@@ -7,6 +7,7 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 # from textblob import TextBlob
+from datetime import datetime
 from configuration import configuration
 
 # Configure logging
@@ -47,9 +48,6 @@ def to_lowercase(text):
 def standardize_accented_chars(text):
     return unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("utf-8", "ignore")
 
-def remove_urls(text):
-    return re.sub(r"https?://\S+|www\.\S+", "", text)
-
 def remove_special_characters(text):
     pattern = r"[^a-zA-Z0-9.,!?/:;\"\'\s]"
     return re.sub(pattern, "", text)
@@ -65,6 +63,27 @@ def remove_stopwords(text):
     words = word_tokenize(text)
     return " ".join([word for word in words if word.lower() not in stop_words])
 
+def remove_emails(text):
+    return re.sub(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', '', text)
+
+def remove_phone_numbers(text):
+    return re.sub(r'\b\d{10,15}\b', '', text)
+
+def remove_links(text):
+    return re.sub(r'http[s]?://\S+|www\.\S+', '', text)
+
+def standardize_dates(text):
+    return re.sub(r'\b(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})\b',
+                  lambda m: datetime.strptime(m.group(0), '%d/%m/%Y').strftime('%Y-%m-%d'), text)
+
+
+def capitalize_proper_nouns(text):
+    words = text.split()
+    return " ".join([word.capitalize() if word.islower() and len(word) > 3 else word for word in words])
+
+
+
+
 # def annotate_entities(text):
 #     blob = TextBlob(text)
 #     annotated_text = text
@@ -76,14 +95,17 @@ def remove_stopwords(text):
 def data_cleaning_pipeline(raw_text):
     cleaned_text = remove_html_tags(raw_text)
     cleaned_text = to_lowercase(cleaned_text)
+    cleaned_text = remove_emails(cleaned_text)
+    cleaned_text = remove_phone_numbers(cleaned_text)
+    cleaned_text = remove_links(cleaned_text)
     cleaned_text = standardize_accented_chars(cleaned_text)
-    cleaned_text = remove_urls(cleaned_text)
     cleaned_text = remove_special_characters(cleaned_text)
     cleaned_text = remove_punctuation(cleaned_text)
     cleaned_text = lemmatization(cleaned_text)
     cleaned_text = remove_stopwords(cleaned_text)
+    cleaned_text = capitalize_proper_nouns(cleaned_text)
     return cleaned_text
-    # return annotate_entities(cleaned_text)
+
 
 # Lambda handler
 def handler(event, context):
