@@ -102,7 +102,7 @@ def annotate_entities(text):
     annotated_text = text
     for entity in entities:
         annotated_text = annotated_text.replace(
-            entity["Text"], f"[{entity["Type"]}] {entity["Text"]}"
+            entity["Text"], f"[{entity['Type']}] {entity['Text']}"
         )
     return annotated_text
 
