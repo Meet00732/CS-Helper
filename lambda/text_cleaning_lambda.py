@@ -82,7 +82,8 @@ def data_cleaning_pipeline(raw_text):
     cleaned_text = remove_punctuation(cleaned_text)
     cleaned_text = lemmatization(cleaned_text)
     cleaned_text = remove_stopwords(cleaned_text)
-    return annotate_entities(cleaned_text)
+    return cleaned_text
+    # return annotate_entities(cleaned_text)
 
 # Lambda handler
 def handler(event, context):
