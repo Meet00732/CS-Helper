@@ -60,6 +60,12 @@ Resources:
                   - "ssm:GetParameterHistory"
                 Resource:
                   - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
+              
+              # Permissions for Comprehend.
+              - Effect: Allow
+                Action:
+                  - "comprehend:DetectEntities"
+                Resource: "*"
 
               # Permissions for CloudWatch Logs (for debugging/logging)
               - Effect: Allow
