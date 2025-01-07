@@ -14,6 +14,12 @@ from configuration import configuration
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+
+COMMON_HEADINGS = [
+    "abstract", "introduction", "methods", "methodology", "results",
+    "discussion", "conclusion", "references", "acknowledgments"
+]
+
 # Initialize S3 client
 s3 = boto3.client('s3')
 
@@ -80,6 +86,54 @@ def remove_domains(text):
     return re.sub(r'\b\w+\.(com|org|net|edu|gov|info|io|xyz|co)\b', '', text)
 
 
+def remove_special_characters(text):
+    """
+    Removes only @ and # characters from the text.
+    """
+    return text.replace("@", "").replace("#", "")
+
+
+def detect_and_tag_headings(text):
+    """
+    Detects headings using formatting, position, and common keywords.
+    """
+    lines = text.split("\n")
+    tagged_lines = []
+
+    for i, line in enumerate(lines):
+        stripped_line = line.strip()
+
+        # 1. Common heading list
+        if stripped_line.lower() in COMMON_HEADINGS:
+            tagged_lines.append(f"[HEADING] {stripped_line}")
+            continue
+
+        # 2. Line has no punctuation and fewer than 5 words.
+        if re.match(r"^[A-Za-z\s]+$", stripped_line) and len(stripped_line.split()) <= 10:
+            tagged_lines.append(f"[HEADING] {stripped_line}")
+            continue
+
+        # 3. Numbered headings
+        if re.match(r"^\d+(\.\d+)*\s+[A-Za-z]+", stripped_line):
+            tagged_lines.append(f"[HEADING] {stripped_line}")
+            continue
+
+        # 4. Trailing colon
+        if stripped_line.endswith(":") and len(stripped_line.split()) <= 5:
+            tagged_lines.append(f"[HEADING] {stripped_line}")
+            continue
+        
+        # 5. Contextual. 
+        # Look at surrounding lines to determine if this is likely a heading.
+        if (i > 0 and not lines[i - 1].strip() and (i == len(lines) - 1 or not lines[i + 1].strip())):
+            tagged_lines.append(f"[HEADING] {stripped_line}")
+            continue
+
+        tagged_lines.append(stripped_line)
+
+    return "\n".join(tagged_lines)
+
+
 
 # def annotate_entities(text):
 #     blob = TextBlob(text)
@@ -117,16 +171,24 @@ def annotate_entities(text):
 
 # Data cleaning pipeline
 def data_cleaning_pipeline(raw_text):
-    cleaned_text = remove_html_tags(raw_text)
+    # Identify Headings
+    cleaned_text = detect_and_tag_headings(raw_text)
+
+    # Pre-Cleaning Steps
+    cleaned_text = remove_html_tags(cleaned_text)
     cleaned_text = to_lowercase(cleaned_text)
+    cleaned_text = standardize_accented_chars(cleaned_text)
+
+    # Core Cleaning Steps
     cleaned_text = remove_domains(cleaned_text)
     cleaned_text = remove_emails(cleaned_text)
     cleaned_text = remove_links(cleaned_text)
     cleaned_text = remove_phone_numbers(cleaned_text)
-    cleaned_text = standardize_accented_chars(cleaned_text)
-    cleaned_text = annotate_entities(cleaned_text)
+    cleaned_text = remove_special_characters(cleaned_text)
     cleaned_text = remove_stopwords(cleaned_text)
     cleaned_text = capitalize_proper_nouns(cleaned_text)
+    cleaned_text = annotate_entities(cleaned_text)
+    
     return cleaned_text
 
 
