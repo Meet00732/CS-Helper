@@ -21,7 +21,7 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
-    - name: Build Lambda Package in Docker
+        - name: Build Lambda Package in Docker
       run: |
         docker pull python:3.8
         docker run --rm -v "$(pwd)":/app -w /app python:3.8 bash -c "
@@ -30,21 +30,20 @@ jobs:
           # Create deployment directories
           mkdir -p scripts lambda/build dependency_layer/python nltk_data
 
-          # Install NLTK temporarily to download resources
+          # Install NLTK and TextBlob for downloading data
           python3 -m pip install --upgrade pip
-          python3 -m pip install nltk==3.9.1
+          python3 -m pip install nltk textblob
 
-          # Download NLTK resources
-          python3 -m nltk.downloader -d nltk_data punkt_tab stopwords wordnet
+          # Download necessary data for NLTK and TextBlob
+          python3 -m nltk.downloader -d nltk_data punkt stopwords wordnet averaged_perceptron_tagger
+          python3 -m textblob.download_corpora -d nltk_data
 
-          # Verify NLTK resources
-          ls -l nltk_data
-          ls -l nltk_data/corpora
-          ls -l nltk_data/tokenizers
+          # Verify downloaded resources
+          ls -R nltk_data/
 
           # Copy Lambda handler files to the build directory
           cp lambda/text_cleaning_lambda.py lambda/textract_lambda.py lambda/configuration.py lambda/__init__.py lambda/build/
-          cp -r nltk_data lambda/build/  # Include NLTK data
+          cp -r nltk_data lambda/build/  # Include NLTK and TextBlob data
 
           # Install dependencies for the Lambda function
           pip install -r lambda/requirements.txt -t lambda/build/
@@ -61,7 +60,6 @@ jobs:
           cd dependency_layer
           zip -r ../scripts/dependency_layer.zip ./*
         "
-
 
 
     - name: Deploy SSM Stack
