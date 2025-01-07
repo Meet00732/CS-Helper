@@ -38,7 +38,7 @@ jobs:
 
           # Download necessary data for NLTK and TextBlob directly into lambda/build/nltk_data
           echo 'Downloading NLTK and TextBlob data...'
-          python3.8 -m nltk.downloader -d lambda/build/nltk_data punkt stopwords wordnet averaged_perceptron_tagger
+          python3.8 -m nltk.downloader -d lambda/build/nltk_data punkt punkt_tab stopwords wordnet
           python3.8 -m textblob.download_corpora -d lambda/build/nltk_data
 
           # Verify downloaded resources
