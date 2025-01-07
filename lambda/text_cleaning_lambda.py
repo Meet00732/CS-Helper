@@ -114,7 +114,7 @@ def detect_and_tag_headings(text):
             continue
 
         # 3. Numbered headings
-        if re.match(r"^\d+(\.\d+)*\s+[A-Za-z]+", stripped_line):
+        if re.match(r"^\d+[\.\-]?\s*[A-Za-z]+", stripped_line):
             tagged_lines.append(f"[HEADING] {stripped_line}")
             continue
 
@@ -159,7 +159,7 @@ def annotate_entities(text):
             
             for entity in entities:
                 # Annotate only desired entity types and technical terms
-                if entity["Type"] in ["PERSON", "ORGANIZATION", "LOCATION", "OTHER"]:
+                if entity["Type"] in ["PERSON", "ORGANIZATION", "LOCATION", "QUANTITY", "TITLE"]:
                     annotated_text = annotated_text.replace(
                         entity["Text"], f"[{entity['Type']}] {entity['Text']}", 1
                     )
@@ -188,7 +188,7 @@ def data_cleaning_pipeline(raw_text):
     cleaned_text = remove_stopwords(cleaned_text)
     cleaned_text = capitalize_proper_nouns(cleaned_text)
     cleaned_text = annotate_entities(cleaned_text)
-    
+
     return cleaned_text
 
 
