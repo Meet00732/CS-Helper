@@ -95,6 +95,68 @@ def detect_and_tag_headings(text):
     return "\n".join(tagged_lines)
 
 
+def remove_redundant_text(text):
+    patterns = [
+        r"\bVolume\s+\d+\s+Issue\s+\d+.*",  # Volume and issue info
+        r"\bLicensed Under Creative Commons.*",  # License details
+        r"\bDoi:\s*\d+\.\d+.*",  # DOI numbers
+        r"\bWww\..*\b",  # URLs starting with "www"
+        r"\bhttp[s]?://\S+"  # Full URLs
+    ]
+    for pattern in patterns:
+        text = re.sub(pattern, "", text, flags=re.IGNORECASE)
+    return text.strip()
+
+
+def fix_line_breaks(text):
+    lines = text.split("\n")
+    fixed_text = []
+    temp_line = ""
+
+    for line in lines:
+        stripped_line = line.strip()
+        if stripped_line:  # Line has content
+            if stripped_line[-1] in ".!?":  # Ends with punctuation
+                temp_line += " " + stripped_line
+                fixed_text.append(temp_line.strip())
+                temp_line = ""
+            else:
+                temp_line += " " + stripped_line  # Continue the sentence
+        else:  # Empty line
+            if temp_line:
+                fixed_text.append(temp_line.strip())
+                temp_line = ""
+            fixed_text.append("")  # Preserve paragraph break
+
+    if temp_line:  # Add remaining sentence
+        fixed_text.append(temp_line.strip())
+
+    return "\n".join(fixed_text)
+
+
+def standardize_casing(text):
+    sentences = sent_tokenize(text)
+    return " ".join(sentence.capitalize() for sentence in sentences)
+
+
+
+def truncate_long_sections(text, max_length=5000):
+    sections = text.split("\n\n")  # Split by paragraphs
+    truncated_text = []
+    total_length = 0
+
+    for section in sections:
+        section_length = len(section)
+        if total_length + section_length <= max_length:
+            truncated_text.append(section)
+            total_length += section_length
+        else:
+            break
+
+    return "\n\n".join(truncated_text)
+
+
+
 
 
 # def annotate_entities(text):
@@ -133,38 +195,53 @@ def annotate_entities(text):
 
 
 
-
-
 # Data cleaning pipeline
 def data_cleaning_pipeline(raw_text):
-    # Step 1: Detect and tag headings first
+    """
+    Main data cleaning pipeline that processes raw text in multiple stages.
+    """
+    # Step 1: Detect and tag headings
     tagged_text = detect_and_tag_headings(raw_text)
 
-    # Step 2: Remove unwanted data while preserving structure
+    # Step 2: Remove redundant text (e.g., volume info, license details)
+    tagged_text = remove_redundant_text(tagged_text)
+
+    # Step 3: Fix line breaks to reconstruct sentences while preserving structure
+    tagged_text = fix_line_breaks(tagged_text)
+
+    # Step 4: Split text into lines for line-wise cleaning
     lines = tagged_text.splitlines()
     cleaned_lines = []
 
     for line in lines:
-        # Clean individual lines
-        line = remove_html_tags(line)
-        line = to_lowercase(line)
-        line = standardize_accented_chars(line)
-        line = remove_domains(line)
-        line = remove_emails(line)
-        line = remove_links(line)
-        line = remove_phone_numbers(line)
-        line = remove_special_characters(line)
-        line = capitalize_proper_nouns(line)
-        line = standardize_dates(line)
+        # Skip empty lines for faster processing
+        if not line.strip():
+            cleaned_lines.append(line)
+            continue
 
-        # Append cleaned line
+        # Clean individual lines
+        line = remove_html_tags(line)  # Remove any HTML tags
+        line = to_lowercase(line)  # Convert text to lowercase
+        line = standardize_accented_chars(line)  # Normalize accented characters
+        line = remove_domains(line)  # Remove .com and similar domains
+        line = remove_emails(line)  # Remove email addresses
+        line = remove_links(line)  # Remove URLs and hyperlinks
+        line = remove_phone_numbers(line)  # Remove phone numbers
+        line = remove_special_characters(line)  # Remove specific special characters (@, #)
+        line = capitalize_proper_nouns(line)  # Capitalize proper nouns
+        line = standardize_dates(line)  # Standardize date formats
+
+        # Append the cleaned line back to the list
         cleaned_lines.append(line)
 
-    # Step 3: Annotate entities after cleaning
+    # Step 5: Reconstruct the cleaned text
     cleaned_text = "\n".join(cleaned_lines)
+
+    # Step 6: Annotate entities using AWS Comprehend
     annotated_text = annotate_entities(cleaned_text)
 
     return annotated_text
+
 
 
 
